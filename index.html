@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Lista de tareas con filtros y persistencia en localStorage." />
+    <title>Lista de tareas</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%85%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>Mis tareas</h1>
+
+      <form id="todo-form" class="todo-form">
+        <label for="new-todo" class="sr-only">Nueva tarea</label>
+        <input
+          id="new-todo"
+          type="text"
+          placeholder="¿Qué tenés que hacer?"
+          autocomplete="off"
+          maxlength="200"
+          required
+        />
+        <button type="submit">Agregar</button>
+      </form>
+
+      <nav class="filters" aria-label="Filtrar tareas">
+        <button type="button" data-filter="all">Todas</button>
+        <button type="button" data-filter="active">Pendientes</button>
+        <button type="button" data-filter="completed">Completadas</button>
+      </nav>
+
+      <ul id="todo-list" class="todo-list"></ul>
+      <p id="empty" class="empty" hidden></p>
+
+      <footer class="footer">
+        <span id="counter" aria-live="polite"></span>
+        <button id="clear-completed" type="button" class="link-button">
+          Borrar completadas
+        </button>
+      </footer>
+
+      <p class="hint">Doble clic sobre una tarea para editarla.</p>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
