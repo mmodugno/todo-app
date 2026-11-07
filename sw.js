@@ -1,8 +1,10 @@
 // Service worker: guarda la app en el dispositivo para que abra sin conexión.
 // Estrategia "primero la red": si hay internet se usa (y se actualiza la copia);
 // si no, se responde con lo guardado. Al cambiar los archivos, subí la versión.
+// Siempre se pide la red con cache: 'no-cache' / 'reload' para saltear la caché HTTP
+// (GitHub Pages guarda 10 minutos): sin esto se mezclaba HTML nuevo con CSS viejo.
 
-const CACHE = 'todo-app-v1';
+const CACHE = 'todo-app-v2';
 
 const ASSETS = [
   './',
@@ -23,7 +25,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(ASSETS))
+      .then((cache) => cache.addAll(ASSETS.map((url) => new Request(url, { cache: 'reload' }))))
       .then(() => self.skipWaiting()),
   );
 });
@@ -42,7 +44,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(request)
+    fetch(request, { cache: 'no-cache' })
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();
