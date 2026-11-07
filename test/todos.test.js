@@ -14,9 +14,23 @@ import {
 } from '../todos.js';
 
 const sample = () => [
-  { id: 'a', text: 'Comprar pan', completed: false, createdAt: 1 },
-  { id: 'b', text: 'Estudiar', completed: true, createdAt: 2 },
-  { id: 'c', text: 'Llamar al banco', completed: false, createdAt: 3 },
+  {
+    id: 'a',
+    text: 'Comprar pan',
+    completed: false,
+    createdAt: 1,
+    dueDate: '2026-11-10',
+    priority: 'high',
+  },
+  { id: 'b', text: 'Estudiar', completed: true, createdAt: 2, dueDate: null, priority: 'medium' },
+  {
+    id: 'c',
+    text: 'Llamar al banco',
+    completed: false,
+    createdAt: 3,
+    dueDate: '2026-11-08',
+    priority: 'low',
+  },
 ];
 
 function fakeStorage(initial = {}) {
@@ -33,7 +47,14 @@ function fakeStorage(initial = {}) {
 test('addTodo agrega la tarea al final con el texto recortado', () => {
   const result = addTodo([], '  Regar las plantas  ', { id: 'x', now: 10 });
   assert.deepEqual(result, [
-    { id: 'x', text: 'Regar las plantas', completed: false, createdAt: 10 },
+    {
+      id: 'x',
+      text: 'Regar las plantas',
+      completed: false,
+      createdAt: 10,
+      dueDate: null,
+      priority: 'medium',
+    },
   ]);
 });
 
