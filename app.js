@@ -20,11 +20,11 @@ import {
 
 const STORAGE_KEY = 'todo-app:v1';
 const EMPTY_MESSAGES = {
-  all: 'Todavía no hay tareas. ¡Agregá la primera!',
-  active: 'No tenés tareas pendientes.',
+  all: 'No hay tareas todavía. Escribí la primera arriba.',
+  active: 'No quedan tareas pendientes.',
   completed: 'Todavía no completaste ninguna tarea.',
 };
-const NO_MATCH_MESSAGE = 'No hay tareas que coincidan con la búsqueda.';
+const NO_MATCH_MESSAGE = 'Ninguna tarea coincide con la búsqueda.';
 const PRIORITY_LABELS = { high: 'Alta', medium: 'Media', low: 'Baja' };
 
 // Algunos navegadores lanzan error solo por acceder a localStorage (modo privado).
@@ -56,6 +56,7 @@ const empty = document.getElementById('empty');
 const counter = document.getElementById('counter');
 const clearButton = document.getElementById('clear-completed');
 const filterButtons = document.querySelectorAll('[data-filter]');
+const todayHeading = document.getElementById('today');
 
 function commit() {
   saveTodos(storage, STORAGE_KEY, todos);
@@ -68,6 +69,20 @@ function formatDate(isoDate) {
     day: 'numeric',
     month: 'short',
   });
+}
+
+// El encabezado es la fecha de hoy, como al empezar una hoja nueva del cuaderno.
+function renderDate(now = new Date()) {
+  const weekday = now.toLocaleDateString('es-AR', { weekday: 'long' });
+  const month = now.toLocaleDateString('es-AR', { month: 'long' });
+  const first = document.createElement('span');
+  first.className = 'day-line';
+  first.textContent = `${weekday} ${now.getDate()}`;
+  const second = document.createElement('span');
+  second.className = 'day-line';
+  second.textContent = `de ${month}`;
+  todayHeading.dateTime = todayString(now);
+  todayHeading.replaceChildren(first, second);
 }
 
 function createBadge(className, text) {
@@ -84,13 +99,11 @@ function renderMeta(todo, today) {
   if (todo.dueDate) {
     const status = dueStatus(todo, today);
     const date = formatDate(todo.dueDate);
-    if (status === 'overdue') meta.append(createBadge('due overdue', `Vencida · ${date}`));
+    if (status === 'overdue') meta.append(createBadge('due overdue', `Vencida el ${date}`));
     else if (status === 'today') meta.append(createBadge('due today', 'Vence hoy'));
     else meta.append(createBadge('due', `Vence ${date}`));
   }
-  if (todo.priority !== 'medium') {
-    meta.append(createBadge(`priority-${todo.priority}`, PRIORITY_LABELS[todo.priority]));
-  }
+  if (todo.priority === 'low') meta.append(createBadge('priority-low', 'Prioridad baja'));
   for (const tag of todo.tags) {
     const badge = document.createElement('button');
     badge.type = 'button';
@@ -177,6 +190,19 @@ function renderItem(todo, today) {
   item.className = todo.completed ? 'todo completed' : 'todo';
   item.dataset.id = todo.id;
 
+  if (todo.priority === 'high') {
+    const mark = document.createElement('span');
+    mark.className = 'priority-mark high';
+    const hidden = document.createElement('span');
+    hidden.className = 'sr-only';
+    hidden.textContent = 'Prioridad alta';
+    const symbol = document.createElement('span');
+    symbol.setAttribute('aria-hidden', 'true');
+    symbol.textContent = '!!';
+    mark.append(hidden, symbol);
+    item.append(mark);
+  }
+
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.checked = todo.completed;
@@ -230,7 +256,10 @@ function renderTagBar(tags) {
       const chip = document.createElement('button');
       chip.type = 'button';
       chip.className = tag === activeTag ? 'chip active' : 'chip';
-      chip.textContent = `#${tag} (${count})`;
+      const total = document.createElement('span');
+      total.className = 'count';
+      total.textContent = count;
+      chip.append(`#${tag} `, total);
       chip.setAttribute('aria-pressed', String(tag === activeTag));
       chip.addEventListener('click', () => toggleTag(tag));
       return chip;
@@ -240,6 +269,7 @@ function renderTagBar(tags) {
 
 function render() {
   const today = todayString();
+  renderDate();
   const tags = allTags(todos);
   // Si ya no quedan tareas con la etiqueta seleccionada, se quita el filtro.
   if (activeTag && !tags.some(({ tag }) => tag === activeTag)) activeTag = null;
@@ -253,7 +283,8 @@ function render() {
   empty.textContent = query || activeTag ? NO_MATCH_MESSAGE : EMPTY_MESSAGES[filter];
 
   const active = countActive(todos);
-  counter.textContent = active === 1 ? '1 tarea pendiente' : `${active} tareas pendientes`;
+  counter.textContent =
+    active === 0 ? 'Nada pendiente' : active === 1 ? '1 tarea por hacer' : `${active} tareas por hacer`;
   clearButton.disabled = active === todos.length;
 
   for (const button of filterButtons) {
