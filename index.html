@@ -3,17 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Lista de tareas con filtros, prioridades y persistencia en localStorage." />
-    <title>Lista de tareas</title>
+    <meta name="description" content="Lista de tareas con prioridades, vencimientos y etiquetas. Se guarda en tu navegador." />
+    <title>Tareas</title>
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%85%3C/text%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23fbfbf9'/%3E%3Cpath d='M0 10.5h32M0 21.5h32' stroke='%23c9dcef' stroke-width='1.5'/%3E%3Cpath d='M6 17l6.5 6.5L26 8' fill='none' stroke='%232a3fd6' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
     />
+    <link rel="preload" href="fonts/recursive-latin-casl-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="app">
-      <h1>Mis tareas</h1>
+    <main class="sheet">
+      <header class="masthead">
+        <h1>
+          <span class="sr-only">Tareas del </span>
+          <time id="today"></time>
+        </h1>
+        <p id="counter" class="counter" aria-live="polite"></p>
+      </header>
 
       <form id="todo-form" class="todo-form">
         <div class="row">
@@ -21,14 +28,14 @@
           <input
             id="new-todo"
             type="text"
-            placeholder="¿Qué tenés que hacer? Podés usar #etiquetas"
+            placeholder="Escribí una tarea"
             autocomplete="off"
             maxlength="200"
             required
           />
           <button type="submit">Agregar</button>
         </div>
-        <div class="row options">
+        <div class="options">
           <label>
             Vence
             <input id="new-due" type="date" />
@@ -61,7 +68,7 @@
           <button type="button" data-filter="completed">Completadas</button>
         </nav>
         <label class="sort">
-          Ordenar
+          Ordenar por
           <select id="sort">
             <option value="added">Orden de carga</option>
             <option value="priority">Prioridad</option>
@@ -75,13 +82,12 @@
       <p id="empty" class="empty" hidden></p>
 
       <footer class="footer">
-        <span id="counter" aria-live="polite"></span>
         <button id="clear-completed" type="button" class="link-button">
           Borrar completadas
         </button>
       </footer>
 
-      <p class="hint">Doble clic sobre una tarea para editarla.</p>
+      <p class="hint">Doble clic en una tarea para editarla. Sumá #etiquetas dentro del texto para agruparlas.</p>
     </main>
 
     <script type="module" src="app.js"></script>
