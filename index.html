@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Lista de tareas con filtros y persistencia en localStorage." />
+    <meta name="description" content="Lista de tareas con filtros, prioridades y persistencia en localStorage." />
     <title>Lista de tareas</title>
     <link
       rel="icon"
@@ -16,23 +16,50 @@
       <h1>Mis tareas</h1>
 
       <form id="todo-form" class="todo-form">
-        <label for="new-todo" class="sr-only">Nueva tarea</label>
-        <input
-          id="new-todo"
-          type="text"
-          placeholder="¿Qué tenés que hacer?"
-          autocomplete="off"
-          maxlength="200"
-          required
-        />
-        <button type="submit">Agregar</button>
+        <div class="row">
+          <label for="new-todo" class="sr-only">Nueva tarea</label>
+          <input
+            id="new-todo"
+            type="text"
+            placeholder="¿Qué tenés que hacer?"
+            autocomplete="off"
+            maxlength="200"
+            required
+          />
+          <button type="submit">Agregar</button>
+        </div>
+        <div class="row options">
+          <label>
+            Vence
+            <input id="new-due" type="date" />
+          </label>
+          <label>
+            Prioridad
+            <select id="new-priority">
+              <option value="high">Alta</option>
+              <option value="medium" selected>Media</option>
+              <option value="low">Baja</option>
+            </select>
+          </label>
+        </div>
       </form>
 
-      <nav class="filters" aria-label="Filtrar tareas">
-        <button type="button" data-filter="all">Todas</button>
-        <button type="button" data-filter="active">Pendientes</button>
-        <button type="button" data-filter="completed">Completadas</button>
-      </nav>
+      <div class="toolbar">
+        <nav class="filters" aria-label="Filtrar tareas">
+          <button type="button" data-filter="all">Todas</button>
+          <button type="button" data-filter="active">Pendientes</button>
+          <button type="button" data-filter="completed">Completadas</button>
+        </nav>
+        <label class="sort">
+          Ordenar
+          <select id="sort">
+            <option value="added">Orden de carga</option>
+            <option value="priority">Prioridad</option>
+            <option value="due">Vencimiento</option>
+            <option value="newest">Más nuevas</option>
+          </select>
+        </label>
+      </div>
 
       <ul id="todo-list" class="todo-list"></ul>
       <p id="empty" class="empty" hidden></p>
