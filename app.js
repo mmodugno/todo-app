@@ -319,9 +319,11 @@ function renderEditor(todo) {
 function renderItem(todo, today) {
   const item = el('li', { className: todo.completed ? 'todo completed' : 'todo' });
   item.dataset.id = todo.id;
+  const row = el('div', { className: 'todo-row' });
+  item.append(row);
 
   if (todo.priority === 'high') {
-    item.append(
+    row.append(
       el(
         'span',
         { className: 'priority-mark high' },
@@ -331,20 +333,25 @@ function renderItem(todo, today) {
     );
   }
 
-  item.append(
-    el('input', {
-      type: 'checkbox',
-      checked: todo.completed,
-      ariaLabel: `Marcar "${todo.text}" como completada`,
-      onchange: () => {
-        todos = toggleTodo(todos, todo.id);
-        commit();
-      },
-    }),
+  // El <label> agranda el área tocable del checkbox sin cambiar cómo se ve.
+  row.append(
+    el(
+      'label',
+      { className: 'check' },
+      el('input', {
+        type: 'checkbox',
+        checked: todo.completed,
+        ariaLabel: `Marcar "${todo.text}" como completada`,
+        onchange: () => {
+          todos = toggleTodo(todos, todo.id);
+          commit();
+        },
+      }),
+    ),
   );
 
   if (editingId === todo.id) {
-    item.append(renderEditor(todo));
+    row.append(renderEditor(todo));
     return item;
   }
 
@@ -364,7 +371,7 @@ function renderItem(todo, today) {
     onclick: () => removeWithUndo((t) => t.id === todo.id),
   });
 
-  item.append(el('div', { className: 'content' }, text, renderMeta(todo, today)), remove);
+  row.append(el('div', { className: 'content' }, text, renderMeta(todo, today)), remove);
   return item;
 }
 
