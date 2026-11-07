@@ -6,6 +6,10 @@ import {
   removeTodo,
   clearCompleted,
   filterTodos,
+  searchTodos,
+  filterByTag,
+  allTags,
+  formatTodoText,
   sortTodos,
   countActive,
   dueStatus,
@@ -20,6 +24,7 @@ const EMPTY_MESSAGES = {
   active: 'No tenés tareas pendientes.',
   completed: 'Todavía no completaste ninguna tarea.',
 };
+const NO_MATCH_MESSAGE = 'No hay tareas que coincidan con la búsqueda.';
 const PRIORITY_LABELS = { high: 'Alta', medium: 'Media', low: 'Baja' };
 
 // Algunos navegadores lanzan error solo por acceder a localStorage (modo privado).
@@ -35,6 +40,8 @@ const storage = getStorage();
 let todos = loadTodos(storage, STORAGE_KEY);
 let filter = 'all';
 let sort = 'added';
+let query = '';
+let activeTag = null;
 let editingId = null;
 
 const form = document.getElementById('todo-form');
@@ -42,6 +49,8 @@ const input = document.getElementById('new-todo');
 const dueInput = document.getElementById('new-due');
 const priorityInput = document.getElementById('new-priority');
 const sortSelect = document.getElementById('sort');
+const searchInput = document.getElementById('search');
+const tagBar = document.getElementById('tags');
 const list = document.getElementById('todo-list');
 const empty = document.getElementById('empty');
 const counter = document.getElementById('counter');
@@ -82,6 +91,15 @@ function renderMeta(todo, today) {
   if (todo.priority !== 'medium') {
     meta.append(createBadge(`priority-${todo.priority}`, PRIORITY_LABELS[todo.priority]));
   }
+  for (const tag of todo.tags) {
+    const badge = document.createElement('button');
+    badge.type = 'button';
+    badge.className = 'badge tag';
+    badge.textContent = `#${tag}`;
+    badge.setAttribute('aria-label', `Filtrar por la etiqueta ${tag}`);
+    badge.addEventListener('click', () => toggleTag(tag));
+    meta.append(badge);
+  }
   return meta;
 }
 
@@ -92,9 +110,9 @@ function renderEditor(todo) {
   const text = document.createElement('input');
   text.type = 'text';
   text.className = 'edit';
-  text.value = todo.text;
+  text.value = formatTodoText(todo);
   text.maxLength = 200;
-  text.setAttribute('aria-label', 'Editar tarea');
+  text.setAttribute('aria-label', 'Editar tarea (podés usar #etiquetas)');
 
   const due = document.createElement('input');
   due.type = 'date';
@@ -200,13 +218,39 @@ function renderItem(todo, today) {
   return item;
 }
 
+function toggleTag(tag) {
+  activeTag = activeTag === tag ? null : tag;
+  render();
+}
+
+function renderTagBar(tags) {
+  tagBar.hidden = tags.length === 0;
+  tagBar.replaceChildren(
+    ...tags.map(({ tag, count }) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = tag === activeTag ? 'chip active' : 'chip';
+      chip.textContent = `#${tag} (${count})`;
+      chip.setAttribute('aria-pressed', String(tag === activeTag));
+      chip.addEventListener('click', () => toggleTag(tag));
+      return chip;
+    }),
+  );
+}
+
 function render() {
   const today = todayString();
-  const visible = sortTodos(filterTodos(todos, filter), sort);
+  const tags = allTags(todos);
+  // Si ya no quedan tareas con la etiqueta seleccionada, se quita el filtro.
+  if (activeTag && !tags.some(({ tag }) => tag === activeTag)) activeTag = null;
+
+  const matching = filterByTag(searchTodos(filterTodos(todos, filter), query), activeTag);
+  const visible = sortTodos(matching, sort);
   list.replaceChildren(...visible.map((todo) => renderItem(todo, today)));
+  renderTagBar(tags);
 
   empty.hidden = visible.length > 0;
-  empty.textContent = EMPTY_MESSAGES[filter];
+  empty.textContent = query || activeTag ? NO_MATCH_MESSAGE : EMPTY_MESSAGES[filter];
 
   const active = countActive(todos);
   counter.textContent = active === 1 ? '1 tarea pendiente' : `${active} tareas pendientes`;
@@ -237,6 +281,11 @@ for (const button of filterButtons) {
     render();
   });
 }
+
+searchInput.addEventListener('input', () => {
+  query = searchInput.value;
+  render();
+});
 
 sortSelect.addEventListener('change', () => {
   sort = sortSelect.value;
