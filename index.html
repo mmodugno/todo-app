@@ -83,12 +83,17 @@
 
       <footer class="footer">
         <button id="clear-completed" type="button" class="link-button">
-          Borrar completadas
+          Eliminar completadas
         </button>
       </footer>
 
       <p class="hint">Doble clic en una tarea para editarla. Sumá #etiquetas dentro del texto para agruparlas.</p>
     </main>
+
+    <div id="toast" class="toast" role="status" hidden>
+      <span id="toast-message"></span>
+      <button id="toast-undo" type="button">Deshacer</button>
+    </div>
 
     <script type="module" src="app.js"></script>
   </body>
