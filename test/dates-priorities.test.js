@@ -70,7 +70,7 @@ test('updateTodo no muta el original ni toca otras tareas', () => {
 
 test('normalizeTodo completa los campos nuevos en datos viejos', () => {
   const old = { id: 'a', text: 'vieja', completed: false, createdAt: 5 };
-  assert.deepEqual(normalizeTodo(old), { ...old, dueDate: null, priority: 'medium' });
+  assert.deepEqual(normalizeTodo(old), { ...old, dueDate: null, priority: 'medium', tags: [] });
 });
 
 test('loadTodos migra tareas guardadas sin fecha ni prioridad', () => {

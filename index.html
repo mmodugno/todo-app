@@ -21,7 +21,7 @@
           <input
             id="new-todo"
             type="text"
-            placeholder="¿Qué tenés que hacer?"
+            placeholder="¿Qué tenés que hacer? Podés usar #etiquetas"
             autocomplete="off"
             maxlength="200"
             required
@@ -43,6 +43,16 @@
           </label>
         </div>
       </form>
+
+      <input
+        id="search"
+        class="search"
+        type="search"
+        placeholder="Buscar tareas o #etiquetas"
+        aria-label="Buscar tareas"
+        autocomplete="off"
+      />
+      <div id="tags" class="tags" role="group" aria-label="Filtrar por etiqueta" hidden></div>
 
       <div class="toolbar">
         <nav class="filters" aria-label="Filtrar tareas">

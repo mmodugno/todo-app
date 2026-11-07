@@ -21,8 +21,17 @@ const sample = () => [
     createdAt: 1,
     dueDate: '2026-11-10',
     priority: 'high',
+    tags: [],
   },
-  { id: 'b', text: 'Estudiar', completed: true, createdAt: 2, dueDate: null, priority: 'medium' },
+  {
+    id: 'b',
+    text: 'Estudiar',
+    completed: true,
+    createdAt: 2,
+    dueDate: null,
+    priority: 'medium',
+    tags: [],
+  },
   {
     id: 'c',
     text: 'Llamar al banco',
@@ -30,6 +39,7 @@ const sample = () => [
     createdAt: 3,
     dueDate: '2026-11-08',
     priority: 'low',
+    tags: [],
   },
 ];
 
@@ -54,6 +64,7 @@ test('addTodo agrega la tarea al final con el texto recortado', () => {
       createdAt: 10,
       dueDate: null,
       priority: 'medium',
+      tags: [],
     },
   ]);
 });
