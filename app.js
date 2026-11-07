@@ -11,6 +11,7 @@ import {
   filterTodos,
   searchTodos,
   filterByTag,
+  MAX_LENGTH,
   allTags,
   formatTodoText,
   sortTodos,
@@ -30,6 +31,18 @@ const EMPTY_MESSAGES = {
 };
 const NO_MATCH_MESSAGE = 'Ninguna tarea coincide con la búsqueda.';
 const PRIORITY_LABELS = { high: 'Alta', medium: 'Media', low: 'Baja' };
+
+// Crea un elemento: el: el('button', { type: 'button', className: 'x' }, 'texto', otroNodo).
+function el(tag, props = {}, ...children) {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children);
+  return node;
+}
+
+// "1 tarea" / "3 tareas".
+function plural(count, one, many) {
+  return `${count} ${count === 1 ? one : many}`;
+}
 
 // Algunos navegadores lanzan error solo por acceder a localStorage (modo privado).
 function getStorage() {
@@ -153,8 +166,8 @@ function downloadFile(filename, content, type) {
 function importMessage({ added, duplicates, skipped }) {
   if (added === 0) return 'No hay tareas nuevas para importar';
   const parts = [added === 1 ? 'Se importó 1 tarea' : `Se importaron ${added} tareas`];
-  if (duplicates > 0) parts.push(duplicates === 1 ? '1 ya estaba' : `${duplicates} ya estaban`);
-  if (skipped > 0) parts.push(skipped === 1 ? '1 no era válida' : `${skipped} no eran válidas`);
+  if (duplicates > 0) parts.push(plural(duplicates, 'ya estaba', 'ya estaban'));
+  if (skipped > 0) parts.push(plural(skipped, 'no era válida', 'no eran válidas'));
   return parts.join(', ');
 }
 
@@ -211,26 +224,19 @@ function formatDate(isoDate) {
 function renderDate(now = new Date()) {
   const weekday = now.toLocaleDateString('es-AR', { weekday: 'long' });
   const month = now.toLocaleDateString('es-AR', { month: 'long' });
-  const first = document.createElement('span');
-  first.className = 'day-line';
-  first.textContent = `${weekday} ${now.getDate()}`;
-  const second = document.createElement('span');
-  second.className = 'day-line';
-  second.textContent = `de ${month}`;
   todayHeading.dateTime = todayString(now);
-  todayHeading.replaceChildren(first, second);
+  todayHeading.replaceChildren(
+    el('span', { className: 'day-line', textContent: `${weekday} ${now.getDate()}` }),
+    el('span', { className: 'day-line', textContent: `de ${month}` }),
+  );
 }
 
 function createBadge(className, text) {
-  const badge = document.createElement('span');
-  badge.className = `badge ${className}`;
-  badge.textContent = text;
-  return badge;
+  return el('span', { className: `badge ${className}`, textContent: text });
 }
 
 function renderMeta(todo, today) {
-  const meta = document.createElement('div');
-  meta.className = 'meta';
+  const meta = el('div', { className: 'meta' });
 
   if (todo.dueDate) {
     const status = dueStatus(todo, today);
@@ -241,52 +247,42 @@ function renderMeta(todo, today) {
   }
   if (todo.priority === 'low') meta.append(createBadge('priority-low', 'Prioridad baja'));
   for (const tag of todo.tags) {
-    const badge = document.createElement('button');
-    badge.type = 'button';
-    badge.className = 'badge tag';
-    badge.textContent = `#${tag}`;
-    badge.setAttribute('aria-label', `Filtrar por la etiqueta ${tag}`);
-    badge.addEventListener('click', () => toggleTag(tag));
-    meta.append(badge);
+    meta.append(
+      el('button', {
+        type: 'button',
+        className: 'badge tag',
+        textContent: `#${tag}`,
+        ariaLabel: `Filtrar por la etiqueta ${tag}`,
+        onclick: () => toggleTag(tag),
+      }),
+    );
   }
   return meta;
 }
 
 function renderEditor(todo) {
-  const editor = document.createElement('form');
-  editor.className = 'edit-form';
-
-  const text = document.createElement('input');
-  text.type = 'text';
-  text.className = 'edit';
-  text.value = formatTodoText(todo);
-  text.maxLength = 200;
-  text.setAttribute('aria-label', 'Editar tarea (podés usar #etiquetas)');
-
-  const due = document.createElement('input');
-  due.type = 'date';
-  due.value = todo.dueDate ?? '';
-  due.setAttribute('aria-label', 'Fecha de vencimiento');
-
-  const priority = document.createElement('select');
-  priority.setAttribute('aria-label', 'Prioridad');
-  for (const [value, label] of Object.entries(PRIORITY_LABELS)) {
-    const option = document.createElement('option');
-    option.value = value;
-    option.textContent = label;
-    option.selected = value === todo.priority;
-    priority.append(option);
-  }
-
-  const save = document.createElement('button');
-  save.type = 'submit';
-  save.className = 'primary-small';
-  save.textContent = 'Guardar';
-
-  const cancel = document.createElement('button');
-  cancel.type = 'button';
-  cancel.className = 'link-button';
-  cancel.textContent = 'Cancelar';
+  const text = el('input', {
+    type: 'text',
+    className: 'edit',
+    value: formatTodoText(todo),
+    maxLength: MAX_LENGTH,
+    ariaLabel: 'Editar tarea (podés usar #etiquetas)',
+  });
+  const due = el('input', {
+    type: 'date',
+    value: todo.dueDate ?? '',
+    ariaLabel: 'Fecha de vencimiento',
+  });
+  const priority = el(
+    'select',
+    { ariaLabel: 'Prioridad' },
+    ...Object.entries(PRIORITY_LABELS).map(([value, label]) =>
+      el('option', { value, textContent: label, selected: value === todo.priority }),
+    ),
+  );
+  const save = el('button', { type: 'submit', className: 'primary-small', textContent: 'Guardar' });
+  const cancel = el('button', { type: 'button', className: 'link-button', textContent: 'Cancelar' });
+  const editor = el('form', { className: 'edit-form' }, text, due, priority, save, cancel);
 
   // Evita procesar dos veces el mismo cierre (por ejemplo submit y luego Escape).
   let finished = false;
@@ -313,7 +309,6 @@ function renderEditor(todo) {
   });
   cancel.addEventListener('click', () => finish(false));
 
-  editor.append(text, due, priority, save, cancel);
   queueMicrotask(() => {
     text.focus();
     text.select();
@@ -322,58 +317,54 @@ function renderEditor(todo) {
 }
 
 function renderItem(todo, today) {
-  const item = document.createElement('li');
-  item.className = todo.completed ? 'todo completed' : 'todo';
+  const item = el('li', { className: todo.completed ? 'todo completed' : 'todo' });
   item.dataset.id = todo.id;
 
   if (todo.priority === 'high') {
-    const mark = document.createElement('span');
-    mark.className = 'priority-mark high';
-    const hidden = document.createElement('span');
-    hidden.className = 'sr-only';
-    hidden.textContent = 'Prioridad alta';
-    const symbol = document.createElement('span');
-    symbol.setAttribute('aria-hidden', 'true');
-    symbol.textContent = '!!';
-    mark.append(hidden, symbol);
-    item.append(mark);
+    item.append(
+      el(
+        'span',
+        { className: 'priority-mark high' },
+        el('span', { className: 'sr-only', textContent: 'Prioridad alta' }),
+        el('span', { ariaHidden: 'true', textContent: '!!' }),
+      ),
+    );
   }
 
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.checked = todo.completed;
-  checkbox.setAttribute('aria-label', `Marcar "${todo.text}" como completada`);
-  checkbox.addEventListener('change', () => {
-    todos = toggleTodo(todos, todo.id);
-    commit();
-  });
-  item.append(checkbox);
+  item.append(
+    el('input', {
+      type: 'checkbox',
+      checked: todo.completed,
+      ariaLabel: `Marcar "${todo.text}" como completada`,
+      onchange: () => {
+        todos = toggleTodo(todos, todo.id);
+        commit();
+      },
+    }),
+  );
 
   if (editingId === todo.id) {
     item.append(renderEditor(todo));
     return item;
   }
 
-  const content = document.createElement('div');
-  content.className = 'content';
-
-  const text = document.createElement('span');
-  text.className = 'text';
-  text.textContent = todo.text;
-  text.addEventListener('dblclick', () => {
-    editingId = todo.id;
-    render();
+  const text = el('span', {
+    className: 'text',
+    textContent: todo.text,
+    ondblclick: () => {
+      editingId = todo.id;
+      render();
+    },
   });
-  content.append(text, renderMeta(todo, today));
+  const remove = el('button', {
+    type: 'button',
+    className: 'delete',
+    textContent: '×',
+    ariaLabel: `Eliminar "${todo.text}"`,
+    onclick: () => removeWithUndo((t) => t.id === todo.id),
+  });
 
-  const remove = document.createElement('button');
-  remove.type = 'button';
-  remove.className = 'delete';
-  remove.textContent = '×';
-  remove.setAttribute('aria-label', `Eliminar "${todo.text}"`);
-  remove.addEventListener('click', () => removeWithUndo((t) => t.id === todo.id));
-
-  item.append(content, remove);
+  item.append(el('div', { className: 'content' }, text, renderMeta(todo, today)), remove);
   return item;
 }
 
@@ -386,16 +377,17 @@ function renderTagBar(tags) {
   tagBar.hidden = tags.length === 0;
   tagBar.replaceChildren(
     ...tags.map(({ tag, count }) => {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = tag === activeTag ? 'chip active' : 'chip';
-      const total = document.createElement('span');
-      total.className = 'count';
-      total.textContent = count;
-      chip.append(`#${tag} `, total);
-      chip.setAttribute('aria-pressed', String(tag === activeTag));
-      chip.addEventListener('click', () => toggleTag(tag));
-      return chip;
+      return el(
+        'button',
+        {
+          type: 'button',
+          className: tag === activeTag ? 'chip active' : 'chip',
+          ariaPressed: String(tag === activeTag),
+          onclick: () => toggleTag(tag),
+        },
+        `#${tag} `,
+        el('span', { className: 'count', textContent: count }),
+      );
     }),
   );
 }
@@ -417,7 +409,7 @@ function render() {
 
   const active = countActive(todos);
   counter.textContent =
-    active === 0 ? 'Nada pendiente' : active === 1 ? '1 tarea por hacer' : `${active} tareas por hacer`;
+    active === 0 ? 'Nada pendiente' : `${plural(active, 'tarea', 'tareas')} por hacer`;
   clearButton.disabled = active === todos.length;
   exportButton.disabled = todos.length === 0;
 
