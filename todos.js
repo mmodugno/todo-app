@@ -3,7 +3,12 @@
 // funciones devuelven un array nuevo y nunca mutan el original.
 
 export const FILTERS = ['all', 'active', 'completed'];
+export const PRIORITIES = ['high', 'medium', 'low'];
+export const SORTS = ['added', 'priority', 'due', 'newest'];
 export const MAX_LENGTH = 200;
+
+const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
+const NO_DATE = '9999-12-31';
 
 function generateId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -14,10 +19,42 @@ function normalizeText(text) {
   return typeof text === 'string' ? text.trim().slice(0, MAX_LENGTH) : '';
 }
 
-export function addTodo(todos, text, { id = generateId(), now = Date.now() } = {}) {
+// Fechas en formato ISO local (AAAA-MM-DD), el mismo que usa <input type="date">.
+export function isValidDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+export function todayString(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+// Completa los campos opcionales con valores por defecto y descarta los inválidos.
+// Así los datos guardados por versiones anteriores siguen funcionando.
+export function normalizeTodo(todo) {
+  return {
+    id: todo.id,
+    text: todo.text,
+    completed: todo.completed,
+    createdAt: Number.isFinite(todo.createdAt) ? todo.createdAt : 0,
+    dueDate: isValidDate(todo.dueDate) ? todo.dueDate : null,
+    priority: PRIORITIES.includes(todo.priority) ? todo.priority : 'medium',
+  };
+}
+
+export function addTodo(
+  todos,
+  text,
+  { id = generateId(), now = Date.now(), dueDate = null, priority = 'medium' } = {},
+) {
   const clean = normalizeText(text);
   if (!clean) return todos;
-  return [...todos, { id, text: clean, completed: false, createdAt: now }];
+  return [
+    ...todos,
+    normalizeTodo({ id, text: clean, completed: false, createdAt: now, dueDate, priority }),
+  ];
 }
 
 export function toggleTodo(todos, id) {
@@ -31,6 +68,18 @@ export function editTodo(todos, id, text) {
   const clean = normalizeText(text);
   if (!clean) return removeTodo(todos, id);
   return todos.map((todo) => (todo.id === id ? { ...todo, text: clean } : todo));
+}
+
+// Cambia la fecha de vencimiento y/o la prioridad. Lo que no se pasa, no se toca.
+export function updateTodo(todos, id, { dueDate, priority } = {}) {
+  return todos.map((todo) => {
+    if (todo.id !== id) return todo;
+    return normalizeTodo({
+      ...todo,
+      ...(dueDate !== undefined && { dueDate }),
+      ...(priority !== undefined && { priority }),
+    });
+  });
 }
 
 export function removeTodo(todos, id) {
@@ -56,6 +105,43 @@ export function countActive(todos) {
   return todos.filter((todo) => !todo.completed).length;
 }
 
+// 'overdue' (vencida), 'today' (vence hoy), 'upcoming' (futura) o null si no
+// tiene fecha o ya está completada.
+export function dueStatus(todo, today = todayString()) {
+  if (todo.completed || !todo.dueDate) return null;
+  if (todo.dueDate < today) return 'overdue';
+  if (todo.dueDate === today) return 'today';
+  return 'upcoming';
+}
+
+export function sortTodos(todos, mode) {
+  const rank = (todo) => PRIORITY_RANK[todo.priority] ?? PRIORITY_RANK.medium;
+  const due = (todo) => todo.dueDate ?? NO_DATE;
+  const indexed = todos.map((todo, index) => ({ todo, index }));
+
+  let compare;
+  switch (mode) {
+    case 'priority':
+      compare = (a, b) =>
+        rank(a.todo) - rank(b.todo) ||
+        due(a.todo).localeCompare(due(b.todo)) ||
+        a.index - b.index;
+      break;
+    case 'due':
+      compare = (a, b) =>
+        due(a.todo).localeCompare(due(b.todo)) ||
+        rank(a.todo) - rank(b.todo) ||
+        a.index - b.index;
+      break;
+    case 'newest':
+      compare = (a, b) => b.todo.createdAt - a.todo.createdAt || b.index - a.index;
+      break;
+    default:
+      return todos;
+  }
+  return indexed.sort(compare).map(({ todo }) => todo);
+}
+
 function isValidTodo(todo) {
   return (
     todo !== null &&
@@ -72,7 +158,7 @@ export function loadTodos(storage, key) {
     const raw = storage.getItem(key);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter(isValidTodo) : [];
+    return Array.isArray(parsed) ? parsed.filter(isValidTodo).map(normalizeTodo) : [];
   } catch {
     return [];
   }
