@@ -31,6 +31,32 @@ export function todayString(date = new Date()) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+function normalizeTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  const clean = tags
+    .filter((tag) => typeof tag === 'string')
+    .map((tag) => tag.trim().toLowerCase())
+    .filter(Boolean);
+  return [...new Set(clean)];
+}
+
+// Separa las #etiquetas del texto: "Comprar pan #casa" -> { text: "Comprar pan", tags: ["casa"] }.
+// Solo cuenta como etiqueta un # que esté al inicio o después de un espacio (así "C#" queda intacto).
+export function parseTags(text) {
+  const raw = typeof text === 'string' ? text : '';
+  const found = [];
+  const withoutTags = raw.replace(/(^|\s)#([\p{L}\p{N}_-]+)/gu, (_, space, tag) => {
+    found.push(tag);
+    return space;
+  });
+  return { text: withoutTags.replace(/\s+/g, ' ').trim(), tags: normalizeTags(found) };
+}
+
+// Texto tal como se edita: el título seguido de sus #etiquetas.
+export function formatTodoText(todo) {
+  return [todo.text, ...todo.tags.map((tag) => `#${tag}`)].join(' ');
+}
+
 // Completa los campos opcionales con valores por defecto y descarta los inválidos.
 // Así los datos guardados por versiones anteriores siguen funcionando.
 export function normalizeTodo(todo) {
@@ -41,6 +67,7 @@ export function normalizeTodo(todo) {
     createdAt: Number.isFinite(todo.createdAt) ? todo.createdAt : 0,
     dueDate: isValidDate(todo.dueDate) ? todo.dueDate : null,
     priority: PRIORITIES.includes(todo.priority) ? todo.priority : 'medium',
+    tags: normalizeTags(todo.tags),
   };
 }
 
@@ -49,11 +76,20 @@ export function addTodo(
   text,
   { id = generateId(), now = Date.now(), dueDate = null, priority = 'medium' } = {},
 ) {
-  const clean = normalizeText(text);
+  const parsed = parseTags(text);
+  const clean = normalizeText(parsed.text);
   if (!clean) return todos;
   return [
     ...todos,
-    normalizeTodo({ id, text: clean, completed: false, createdAt: now, dueDate, priority }),
+    normalizeTodo({
+      id,
+      text: clean,
+      completed: false,
+      createdAt: now,
+      dueDate,
+      priority,
+      tags: parsed.tags,
+    }),
   ];
 }
 
@@ -65,9 +101,12 @@ export function toggleTodo(todos, id) {
 
 // Si el texto queda vacío, la tarea se elimina (mismo comportamiento que TodoMVC).
 export function editTodo(todos, id, text) {
-  const clean = normalizeText(text);
+  const parsed = parseTags(text);
+  const clean = normalizeText(parsed.text);
   if (!clean) return removeTodo(todos, id);
-  return todos.map((todo) => (todo.id === id ? { ...todo, text: clean } : todo));
+  return todos.map((todo) =>
+    todo.id === id ? { ...todo, text: clean, tags: parsed.tags } : todo,
+  );
 }
 
 // Cambia la fecha de vencimiento y/o la prioridad. Lo que no se pasa, no se toca.
@@ -99,6 +138,36 @@ export function filterTodos(todos, filter) {
     default:
       return todos;
   }
+}
+
+// Compara sin distinguir mayúsculas ni acentos: "cafe" encuentra "Café".
+function fold(value) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+// Busca en el texto y en las etiquetas. Un # inicial se ignora ("#casa" == "casa").
+export function searchTodos(todos, query) {
+  const needle = fold(typeof query === 'string' ? query.trim() : '').replace(/^#/, '');
+  if (!needle) return todos;
+  return todos.filter(
+    (todo) =>
+      fold(todo.text).includes(needle) || todo.tags.some((tag) => fold(tag).includes(needle)),
+  );
+}
+
+export function filterByTag(todos, tag) {
+  return tag ? todos.filter((todo) => todo.tags.includes(tag)) : todos;
+}
+
+// Etiquetas en uso con su cantidad de tareas, de la más usada a la menos usada.
+export function allTags(todos) {
+  const counts = new Map();
+  for (const todo of todos) {
+    for (const tag of todo.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'es'));
 }
 
 export function countActive(todos) {
