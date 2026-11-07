@@ -63,6 +63,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 button,
 input,
 select {
@@ -513,6 +517,44 @@ button.badge.tag:hover {
   font-size: 0.85rem;
 }
 
+/* ---------- Aviso (nota adhesiva) ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.55rem 1.1rem;
+  background: var(--resaltador);
+  color: var(--sobre-resaltador);
+  border-radius: 3px;
+  box-shadow: 0 8px 20px rgba(10, 14, 50, 0.25);
+  transform: translateX(-50%) rotate(-1deg);
+  animation: toast-in 0.18s ease-out;
+}
+
+.toast button {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.6rem) rotate(-1deg);
+  }
+}
+
 @media (max-width: 30rem) {
   :root {
     --gutter: 2.5rem;
@@ -533,7 +575,8 @@ button.badge.tag:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sheet::before {
+  .sheet::before,
+  .toast {
     animation: none;
   }
 }

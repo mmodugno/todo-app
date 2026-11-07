@@ -3,8 +3,8 @@ import {
   toggleTodo,
   editTodo,
   updateTodo,
-  removeTodo,
-  clearCompleted,
+  takeTodos,
+  restoreTodos,
   filterTodos,
   searchTodos,
   filterByTag,
@@ -57,10 +57,51 @@ const counter = document.getElementById('counter');
 const clearButton = document.getElementById('clear-completed');
 const filterButtons = document.querySelectorAll('[data-filter]');
 const todayHeading = document.getElementById('today');
+const toast = document.getElementById('toast');
+const toastMessage = document.getElementById('toast-message');
+const toastUndo = document.getElementById('toast-undo');
 
 function commit() {
   saveTodos(storage, STORAGE_KEY, todos);
   render();
+}
+
+// ---------- Aviso con "Deshacer" ----------
+
+const TOAST_MS = 7000;
+let toastTimer = null;
+let undoAction = null;
+
+function hideToast() {
+  clearTimeout(toastTimer);
+  toast.hidden = true;
+  undoAction = null;
+}
+
+function showToast(message, onUndo) {
+  clearTimeout(toastTimer);
+  toastMessage.textContent = message;
+  undoAction = onUndo;
+  toast.hidden = false;
+  toastTimer = setTimeout(hideToast, TOAST_MS);
+}
+
+toastUndo.addEventListener('click', () => {
+  const action = undoAction;
+  hideToast();
+  action?.();
+});
+
+// Elimina las tareas que cumplen la condición y ofrece deshacerlo.
+function removeWithUndo(predicate) {
+  const { remaining, removed } = takeTodos(todos, predicate);
+  if (removed.length === 0) return;
+  todos = remaining;
+  commit();
+  showToast(removed.length === 1 ? 'Tarea eliminada' : `${removed.length} tareas eliminadas`, () => {
+    todos = restoreTodos(todos, removed);
+    commit();
+  });
 }
 
 function formatDate(isoDate) {
@@ -235,10 +276,7 @@ function renderItem(todo, today) {
   remove.className = 'delete';
   remove.textContent = '×';
   remove.setAttribute('aria-label', `Eliminar "${todo.text}"`);
-  remove.addEventListener('click', () => {
-    todos = removeTodo(todos, todo.id);
-    commit();
-  });
+  remove.addEventListener('click', () => removeWithUndo((t) => t.id === todo.id));
 
   item.append(content, remove);
   return item;
@@ -323,9 +361,6 @@ sortSelect.addEventListener('change', () => {
   render();
 });
 
-clearButton.addEventListener('click', () => {
-  todos = clearCompleted(todos);
-  commit();
-});
+clearButton.addEventListener('click', () => removeWithUndo((t) => t.completed));
 
 render();
