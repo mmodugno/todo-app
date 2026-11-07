@@ -1,28 +1,49 @@
+/*
+  Identidad: una hoja de cuaderno rayado.
+  Renglones azules, margen rojo, tinta de birome y resaltador amarillo.
+  Todo el contenido de la lista se apoya en una grilla vertical de una
+  "unidad" (--u), igual a la separación entre renglones.
+*/
+
+@font-face {
+  font-family: 'Recursive';
+  src: url('fonts/recursive-latin-casl-normal.woff2') format('woff2');
+  font-weight: 300 1000;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --bg: #f4f1fa;
-  --card: #ffffff;
-  --text: #2b2540;
-  --muted: #7a7490;
-  --border: #e4dff0;
-  --accent: #7c5cdb;
-  --accent-text: #ffffff;
-  --danger: #d6455d;
-  --warn: #b7791f;
-  --radius: 12px;
-  color-scheme: light dark;
+  --hoja: #fbfbf9;
+  --renglon: #c9dcef;
+  --tinta: #15194d;
+  --tinta-suave: #596092;
+  --boli: #2a3fd6;
+  --sobre-boli: #ffffff;
+  --margen: #d1303e;
+  --resaltador: #ffe14d;
+  --sobre-resaltador: #15194d;
+  --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.6l3.1 3.1 6.5-7.4' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
+  --marker: linear-gradient(transparent 26%, var(--resaltador) 26% 90%, transparent 90%);
+  --u: 1.75rem;
+  --gutter: 3.25rem;
+  --lead: 1.1rem;
+
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #17141f;
-    --card: #231f30;
-    --text: #ece9f5;
-    --muted: #9a94b3;
-    --border: #363049;
-    --accent: #9b82ee;
-    --accent-text: #17141f;
-    --danger: #ff7b90;
-    --warn: #f0b429;
+    --hoja: #10143a;
+    --renglon: #2b3578;
+    --tinta: #e9ecff;
+    --tinta-suave: #9ea6dc;
+    --boli: #93a5ff;
+    --sobre-boli: #10143a;
+    --margen: #ff7f8a;
+    --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.6l3.1 3.1 6.5-7.4' fill='none' stroke='%2310143a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    color-scheme: dark;
   }
 }
 
@@ -32,30 +53,27 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  padding: 2rem 1rem;
-  background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.4;
+  background: var(--hoja);
+  color: var(--tinta);
+  font-family: 'Recursive', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 420;
+  font-variation-settings: 'CASL' 0.3;
+  line-height: var(--u);
+  -webkit-font-smoothing: antialiased;
 }
 
-.app {
-  width: 100%;
-  max-width: 540px;
-  align-self: flex-start;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  box-shadow: 0 8px 30px rgba(60, 40, 120, 0.08);
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
 }
 
-h1 {
-  margin: 0 0 1rem;
-  font-size: 1.6rem;
+:focus-visible {
+  outline: 2px solid var(--boli);
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
 .sr-only {
@@ -67,124 +85,190 @@ h1 {
   white-space: nowrap;
 }
 
-button,
-input[type='text'] {
-  font: inherit;
-  color: inherit;
+/* ---------- Hoja y margen ---------- */
+
+.sheet {
+  position: relative;
+  max-width: 46rem;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: clamp(2rem, 7vw, 4.5rem) 1.25rem 4rem 0;
 }
 
-button:focus-visible,
-input:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.sheet::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--gutter);
+  width: 2px;
+  background: var(--margen);
+  opacity: 0.8;
+  transform-origin: top;
+  animation: draw-margin 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
+
+@keyframes draw-margin {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+/* Todo lo que no es la lista queda a la derecha del margen. */
+.sheet > :not(.todo-list) {
+  margin-left: calc(var(--gutter) + var(--lead));
+}
+
+/* ---------- Encabezado ---------- */
+
+.masthead {
+  margin-bottom: calc(var(--u) * 1.5);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.6rem, 10vw, 4rem);
+  font-weight: 800;
+  font-variation-settings: 'CASL' 1;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+h1 time {
+  display: block;
+}
+
+h1 .day-line {
+  display: block;
+}
+
+.counter {
+  margin: 0.9rem 0 0;
+  color: var(--tinta-suave);
+}
+
+/* ---------- Formulario ---------- */
 
 .todo-form {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .todo-form .row {
   display: flex;
-  gap: 0.5rem;
+  align-items: flex-end;
+  gap: 1rem;
 }
 
-.todo-form #new-todo {
+#new-todo {
   flex: 1;
   min-width: 0;
-  padding: 0.65rem 0.8rem;
+  padding: 0.35rem 0;
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 0;
+  border-bottom: 2px solid var(--tinta);
+  border-radius: 0;
+  font-size: 1.2rem;
+}
+
+#new-todo::placeholder {
+  color: var(--tinta-suave);
+  opacity: 0.85;
 }
 
 .todo-form button[type='submit'] {
-  padding: 0.65rem 1rem;
-  border: none;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--accent-text);
-  font-weight: 600;
+  padding: 0.4rem 1.1rem;
+  border: 0;
+  border-radius: 4px;
+  background: var(--boli);
+  color: var(--sobre-boli);
+  font-weight: 700;
   cursor: pointer;
 }
 
-.todo-form button[type='submit']:hover {
-  filter: brightness(1.08);
+.todo-form button[type='submit']:active {
+  transform: translateY(1px);
 }
 
 .options {
+  display: flex;
   flex-wrap: wrap;
-  color: var(--muted);
-  font-size: 0.85rem;
+  gap: 0 1.5rem;
+  color: var(--tinta-suave);
+  font-size: 0.95rem;
 }
 
 .options label,
 .sort {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 input[type='date'],
 select {
-  padding: 0.3rem 0.5rem;
+  padding: 0.1rem 0.15rem;
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font: inherit;
-  color: var(--text);
+  border: 0;
+  border-bottom: 1px dashed var(--tinta-suave);
+  border-radius: 0;
+  color: var(--tinta);
+  font-size: 1rem;
 }
 
 select option {
-  background: var(--card);
-  color: var(--text);
+  background: var(--hoja);
+  color: var(--tinta);
 }
 
+/* ---------- Búsqueda, etiquetas y filtros ---------- */
+
 .search {
-  width: 100%;
-  margin-top: 1rem;
-  padding: 0.55rem 0.8rem;
+  display: block;
+  width: calc(100% - var(--gutter) - var(--lead));
+  margin-top: calc(var(--u) * 1.25);
+  padding: 0.3rem 0;
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font: inherit;
-  color: var(--text);
+  border: 0;
+  border-bottom: 1px solid var(--renglon);
+  border-radius: 0;
 }
 
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.7rem;
+  gap: 0 1.1rem;
+  margin-top: 0.4rem;
 }
 
 .chip {
-  padding: 0.15rem 0.65rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: transparent;
-  font-size: 0.82rem;
+  padding: 0 0.15rem;
+  background: none;
+  border: 0;
+  color: var(--boli);
+  line-height: var(--u);
   cursor: pointer;
+}
+
+.chip .count {
+  color: var(--tinta-suave);
+  font-size: 0.8em;
+}
+
+.chip:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .chip.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
+  background: var(--marker);
+  color: var(--sobre-resaltador);
+  font-weight: 700;
 }
 
-button.badge.tag {
-  background: transparent;
-  font: inherit;
-  font-size: 0.75rem;
-  color: var(--accent);
-  cursor: pointer;
-}
-
-button.badge.tag:hover {
-  background: var(--border);
+.chip.active .count {
+  color: inherit;
 }
 
 .toolbar {
@@ -192,33 +276,41 @@ button.badge.tag:hover {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 0.6rem;
-  margin: 1rem 0;
-}
-
-.sort {
-  color: var(--muted);
-  font-size: 0.85rem;
+  gap: 0 1.5rem;
+  margin-top: calc(var(--u) * 0.75);
+  margin-bottom: calc(var(--u) * 0.75);
 }
 
 .filters {
   display: flex;
-  gap: 0.4rem;
+  gap: 1rem;
 }
 
 .filters button {
-  padding: 0.3rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: transparent;
+  padding: 0 0.2rem;
+  background: none;
+  border: 0;
+  color: var(--tinta-suave);
+  line-height: var(--u);
   cursor: pointer;
 }
 
-.filters button.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
+.filters button:hover {
+  color: var(--tinta);
 }
+
+.filters button.active {
+  background: var(--marker);
+  color: var(--sobre-resaltador);
+  font-weight: 700;
+}
+
+.sort {
+  color: var(--tinta-suave);
+  font-size: 0.95rem;
+}
+
+/* ---------- Lista: cada renglón mide una unidad ---------- */
 
 .todo-list {
   list-style: none;
@@ -227,23 +319,48 @@ button.badge.tag:hover {
 }
 
 .todo {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 0.2rem;
-  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: var(--gutter) var(--lead) 1.2rem minmax(0, 1fr) auto;
+  background-image: linear-gradient(
+    to bottom,
+    transparent calc(var(--u) - 1px),
+    var(--renglon) calc(var(--u) - 1px)
+  );
+  background-size: 100% var(--u);
+}
+
+.priority-mark {
+  grid-column: 1;
+  justify-self: end;
+  padding-right: 0.7rem;
+  color: var(--margen);
+  font-weight: 800;
+  line-height: var(--u);
 }
 
 .todo input[type='checkbox'] {
-  width: 1.15rem;
-  height: 1.15rem;
-  accent-color: var(--accent);
-  flex-shrink: 0;
+  appearance: none;
+  grid-column: 3;
+  align-self: start;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: calc((var(--u) - 1.2rem) / 2) 0 0;
+  border: 2px solid var(--tinta);
+  border-radius: 3px;
+  background: center / 100% no-repeat;
+  cursor: pointer;
+}
+
+.todo input[type='checkbox']:checked {
+  border-color: var(--boli);
+  background-color: var(--boli);
+  background-image: var(--check);
 }
 
 .todo .content {
-  flex: 1;
+  grid-column: 4;
   min-width: 0;
+  padding-left: 0.8rem;
 }
 
 .todo .text {
@@ -252,11 +369,19 @@ button.badge.tag:hover {
   cursor: text;
 }
 
+.todo.completed .text {
+  color: var(--tinta-suave);
+  text-decoration: line-through;
+  text-decoration-color: var(--boli);
+  text-decoration-thickness: 0.12em;
+}
+
 .meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.2rem;
+  gap: 0 1rem;
+  font-size: 0.875rem;
+  line-height: var(--u);
 }
 
 .meta:empty {
@@ -264,113 +389,116 @@ button.badge.tag:hover {
 }
 
 .badge {
-  padding: 0.05rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 0.75rem;
+  color: var(--tinta-suave);
+  white-space: nowrap;
 }
 
 .badge.due.today {
-  color: var(--warn);
-  border-color: var(--warn);
-}
-
-.badge.due.overdue {
-  color: var(--danger);
-  border-color: var(--danger);
+  padding: 0 0.3em;
+  background: var(--marker);
+  color: var(--sobre-resaltador);
   font-weight: 600;
 }
 
-.badge.priority-high {
-  color: var(--danger);
-  border-color: var(--danger);
+.badge.due.overdue {
+  color: var(--margen);
+  font-weight: 700;
 }
 
-.badge.priority-low {
-  color: var(--accent);
-  border-color: var(--accent);
+button.badge.tag {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--boli);
+  line-height: var(--u);
+  cursor: pointer;
 }
+
+button.badge.tag:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.todo .delete {
+  grid-column: 5;
+  align-self: start;
+  height: var(--u);
+  padding: 0 0.6rem;
+  background: none;
+  border: 0;
+  color: var(--tinta-suave);
+  font-size: 1.35rem;
+  line-height: var(--u);
+  cursor: pointer;
+}
+
+.todo .delete:hover {
+  color: var(--margen);
+}
+
+/* Edición en el lugar: cada control también mide una unidad. */
 
 .edit-form {
-  flex: 1;
-  min-width: 0;
+  grid-column: 4 / 6;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0 0.9rem;
+  padding-left: 0.8rem;
 }
 
 .edit-form .edit {
   flex: 1 1 100%;
+  height: var(--u);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: inset 0 -2px 0 var(--boli);
+}
+
+.edit-form input[type='date'],
+.edit-form select,
+.edit-form button {
+  height: var(--u);
+  font-size: 0.95rem;
 }
 
 .primary-small {
-  padding: 0.3rem 0.8rem;
-  border: none;
-  border-radius: 6px;
-  background: var(--accent);
-  color: var(--accent-text);
-  font-weight: 600;
+  padding: 0 0.9rem;
+  background: var(--boli);
+  border: 0;
+  border-radius: 4px;
+  color: var(--sobre-boli);
+  font-weight: 700;
   cursor: pointer;
 }
 
-.todo.completed .text {
-  color: var(--muted);
-  text-decoration: line-through;
-}
-
-.todo .edit {
-  flex: 1;
-  min-width: 0;
-  padding: 0.3rem 0.5rem;
-  background: transparent;
-  border: 1px solid var(--accent);
-  border-radius: 6px;
-}
-
-.todo .delete {
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 1.3rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0.2rem 0.4rem;
-  border-radius: 6px;
-}
-
-.todo .delete:hover {
-  color: var(--danger);
-}
+/* ---------- Pie ---------- */
 
 .empty {
-  text-align: center;
-  color: var(--muted);
-  padding: 1.5rem 0;
-  margin: 0;
+  margin-top: var(--u);
+  margin-bottom: 0;
+  color: var(--tinta-suave);
 }
 
 .footer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1rem;
-  color: var(--muted);
-  font-size: 0.9rem;
+  margin-top: var(--u);
 }
 
 .link-button {
-  background: none;
-  border: none;
   padding: 0;
-  color: var(--muted);
+  background: none;
+  border: 0;
+  color: var(--tinta-suave);
   text-decoration: underline;
+  text-underline-offset: 0.25em;
   cursor: pointer;
 }
 
 .link-button:hover:not(:disabled) {
-  color: var(--danger);
+  color: var(--margen);
 }
 
 .link-button:disabled {
@@ -379,8 +507,33 @@ button.badge.tag:hover {
 }
 
 .hint {
-  margin: 1.2rem 0 0;
-  text-align: center;
-  font-size: 0.8rem;
-  color: var(--muted);
+  margin-top: 0.4rem;
+  margin-bottom: 0;
+  color: var(--tinta-suave);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 30rem) {
+  :root {
+    --gutter: 2.5rem;
+    --lead: 0.8rem;
+  }
+
+  .sheet {
+    padding-right: 0.9rem;
+  }
+
+  .todo .content {
+    padding-left: 0.6rem;
+  }
+
+  .todo .delete {
+    padding: 0 0.3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet::before {
+    animation: none;
+  }
 }
