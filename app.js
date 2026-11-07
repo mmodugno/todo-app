@@ -74,15 +74,23 @@ const root = document.documentElement;
 const themeToggle = document.getElementById('theme-toggle');
 const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
 
+const themeColor = document.querySelector('meta[name="theme-color"]');
+
+// Cambia el tema y pinta del mismo color la barra del navegador en el celular.
+function applyTheme(theme) {
+  root.dataset.theme = theme;
+  themeColor.content = theme === 'dark' ? '#10143a' : '#fbfbf9';
+}
+
 themeToggle.addEventListener('click', () => {
   const theme = nextTheme(root.dataset.theme);
-  root.dataset.theme = theme;
+  applyTheme(theme);
   saveTheme(storage, theme);
 });
 
 // Si nunca elegiste un tema, la app acompaña los cambios del sistema.
 systemDark.addEventListener('change', (event) => {
-  if (loadTheme(storage) === null) root.dataset.theme = resolveTheme(null, event.matches);
+  if (loadTheme(storage) === null) applyTheme(resolveTheme(null, event.matches));
 });
 
 function commit() {
@@ -452,3 +460,12 @@ sortSelect.addEventListener('change', () => {
 clearButton.addEventListener('click', () => removeWithUndo((t) => t.completed));
 
 render();
+
+// Permite instalar la app y usarla sin conexión.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      // Sin service worker la app funciona igual, solo que no abre sin conexión.
+    });
+  });
+}
