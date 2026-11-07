@@ -5,6 +5,9 @@ import {
   updateTodo,
   takeTodos,
   restoreTodos,
+  exportTodos,
+  parseImport,
+  mergeTodos,
   filterTodos,
   searchTodos,
   filterByTag,
@@ -57,6 +60,9 @@ const counter = document.getElementById('counter');
 const clearButton = document.getElementById('clear-completed');
 const filterButtons = document.querySelectorAll('[data-filter]');
 const todayHeading = document.getElementById('today');
+const exportButton = document.getElementById('export');
+const importButton = document.getElementById('import');
+const importFile = document.getElementById('import-file');
 const toast = document.getElementById('toast');
 const toastMessage = document.getElementById('toast-message');
 const toastUndo = document.getElementById('toast-undo');
@@ -81,7 +87,8 @@ function hideToast() {
 function showToast(message, onUndo) {
   clearTimeout(toastTimer);
   toastMessage.textContent = message;
-  undoAction = onUndo;
+  undoAction = onUndo ?? null;
+  toastUndo.hidden = !onUndo;
   toast.hidden = false;
   toastTimer = setTimeout(hideToast, TOAST_MS);
 }
@@ -103,6 +110,68 @@ function removeWithUndo(predicate) {
     commit();
   });
 }
+
+// ---------- Exportar e importar ----------
+
+function downloadFile(filename, content, type) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importMessage({ added, duplicates, skipped }) {
+  if (added === 0) return 'No hay tareas nuevas para importar';
+  const parts = [added === 1 ? 'Se importó 1 tarea' : `Se importaron ${added} tareas`];
+  if (duplicates > 0) parts.push(duplicates === 1 ? '1 ya estaba' : `${duplicates} ya estaban`);
+  if (skipped > 0) parts.push(skipped === 1 ? '1 no era válida' : `${skipped} no eran válidas`);
+  return parts.join(', ');
+}
+
+async function importFromFile(file) {
+  let text;
+  try {
+    text = await file.text();
+  } catch {
+    showToast('No se pudo leer el archivo');
+    return;
+  }
+  const parsed = parseImport(text);
+  if (!parsed.ok) {
+    showToast(`No se pudo importar: ${parsed.error}`);
+    return;
+  }
+  const { todos: merged, added, duplicates } = mergeTodos(todos, parsed.todos);
+  todos = merged;
+  commit();
+  const addedIds = new Set(added.map((todo) => todo.id));
+  const message = importMessage({ added: added.length, duplicates, skipped: parsed.skipped });
+  showToast(
+    message,
+    added.length === 0
+      ? undefined
+      : () => {
+          todos = takeTodos(todos, (todo) => addedIds.has(todo.id)).remaining;
+          commit();
+        },
+  );
+}
+
+exportButton.addEventListener('click', () => {
+  downloadFile(`tareas-${todayString()}.json`, exportTodos(todos), 'application/json');
+});
+
+importButton.addEventListener('click', () => importFile.click());
+
+importFile.addEventListener('change', async () => {
+  const [file] = importFile.files;
+  importFile.value = ''; // permite volver a elegir el mismo archivo
+  if (file) await importFromFile(file);
+});
 
 function formatDate(isoDate) {
   const [year, month, day] = isoDate.split('-').map(Number);
@@ -324,6 +393,7 @@ function render() {
   counter.textContent =
     active === 0 ? 'Nada pendiente' : active === 1 ? '1 tarea por hacer' : `${active} tareas por hacer`;
   clearButton.disabled = active === todos.length;
+  exportButton.disabled = todos.length === 0;
 
   for (const button of filterButtons) {
     const isActive = button.dataset.filter === filter;
