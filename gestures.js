@@ -17,7 +17,7 @@ export function swipeAction({ dx, width, elapsed }) {
 
 // Limita cuánto acompaña la fila al dedo, para que nunca desaparezca del todo.
 export function clampSwipe(dx, width) {
-  const limit = width * 0.7;
+  const limit = (width * 7) / 10; // 70% del ancho; así evitamos el error de punto flotante de * 0.7
   return Math.max(-limit, Math.min(limit, dx));
 }
 

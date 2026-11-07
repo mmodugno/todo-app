@@ -32,6 +32,7 @@ test('dueShortcut calcula hoy, mañana y la semana que viene', () => {
 test('dueShortcut devuelve null para un atajo desconocido', () => {
   assert.equal(dueShortcut('ayer', '2026-11-07'), null);
   assert.equal(dueShortcut(undefined, '2026-11-07'), null);
+  assert.equal(dueShortcut('toString', '2026-11-07'), null);
 });
 
 test('cyclePriority recorre media, alta, baja y vuelve a media', () => {
@@ -40,7 +41,7 @@ test('cyclePriority recorre media, alta, baja y vuelve a media', () => {
   assert.equal(cyclePriority('low'), 'medium');
 });
 
-test('cyclePriority con un valor inválido empieza por alta', () => {
+test('cyclePriority con un valor inválido vuelve a media', () => {
   assert.equal(cyclePriority('urgente'), 'medium');
 });
 
