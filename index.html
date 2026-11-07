@@ -85,6 +85,23 @@
         <button id="clear-completed" type="button" class="link-button">
           Eliminar completadas
         </button>
+        <button
+          id="export"
+          type="button"
+          class="link-button"
+          title="Descargar tus tareas como archivo JSON"
+        >
+          Exportar
+        </button>
+        <button
+          id="import"
+          type="button"
+          class="link-button"
+          title="Sumar tareas desde un archivo JSON exportado antes"
+        >
+          Importar
+        </button>
+        <input id="import-file" class="sr-only" type="file" accept=".json,application/json" tabindex="-1" aria-hidden="true" />
       </footer>
 
       <p class="hint">Doble clic en una tarea para editarla. Sumá #etiquetas dentro del texto para agruparlas.</p>

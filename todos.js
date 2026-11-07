@@ -267,3 +267,54 @@ export function saveTodos(storage, key, todos) {
     return false;
   }
 }
+
+// ---------- Exportar / importar ----------
+
+export const EXPORT_VERSION = 1;
+
+export function exportTodos(todos, now = new Date()) {
+  return JSON.stringify(
+    { app: 'todo-app', version: EXPORT_VERSION, exportedAt: now.toISOString(), todos },
+    null,
+    2,
+  );
+}
+
+// Acepta el archivo exportado por la app ({ todos: [...] }) o directamente una lista.
+// Devuelve { ok: true, todos, skipped } o { ok: false, error }.
+export function parseImport(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { ok: false, error: 'El archivo no es un JSON válido.' };
+  }
+  const list = Array.isArray(data) ? data : data?.todos;
+  if (!Array.isArray(list)) {
+    return { ok: false, error: 'El archivo no contiene una lista de tareas.' };
+  }
+  const valid = list
+    .filter(isValidTodo)
+    .map((todo) => normalizeTodo({ ...todo, text: normalizeText(todo.text) }))
+    .filter((todo) => todo.text);
+  if (valid.length === 0) {
+    return { ok: false, error: 'No se encontraron tareas válidas en el archivo.' };
+  }
+  return { ok: true, todos: valid, skipped: list.length - valid.length };
+}
+
+// Suma las tareas importadas a las actuales, salteando las que ya existen (mismo id).
+export function mergeTodos(current, incoming) {
+  const seen = new Set(current.map((todo) => todo.id));
+  const added = [];
+  for (const todo of incoming) {
+    if (seen.has(todo.id)) continue;
+    seen.add(todo.id);
+    added.push(todo);
+  }
+  return {
+    todos: [...current, ...added],
+    added,
+    duplicates: incoming.length - added.length,
+  };
+}
