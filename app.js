@@ -86,6 +86,13 @@ const toastUndo = document.getElementById('toast-undo');
 const quickButtons = document.querySelectorAll('[data-due]');
 const quickPriority = document.getElementById('quick-priority');
 const searchToggle = document.getElementById('search-toggle');
+const compact = window.matchMedia('(max-width: 40rem)');
+const editSheet = document.getElementById('edit-sheet');
+const editForm = document.getElementById('edit-form');
+const editText = document.getElementById('edit-text');
+const editDue = document.getElementById('edit-due');
+const editDueButtons = document.querySelectorAll('#edit-due-chips button');
+const editPriorityButtons = document.querySelectorAll('#edit-priority button');
 
 // ---------- Tema claro / oscuro ----------
 
@@ -365,6 +372,7 @@ function renderItem(todo, today) {
   const text = el('span', {
     className: 'text',
     textContent: todo.text,
+    // En escritorio se edita en el lugar con doble clic.
     ondblclick: () => {
       editingId = todo.id;
       render();
@@ -378,9 +386,76 @@ function renderItem(todo, today) {
     onclick: () => removeWithUndo((t) => t.id === todo.id),
   });
 
-  row.append(el('div', { className: 'content' }, text, renderMeta(todo, today)), remove);
+  const content = el('div', { className: 'content' }, text, renderMeta(todo, today));
+  // En el celular un toque abre la hoja de edición (no existe el doble clic).
+  content.addEventListener('click', (event) => {
+    if (compact.matches && !event.target.closest('button')) openEditSheet(todo);
+  });
+  row.append(content, remove);
   return item;
 }
+
+// ---------- Celular: hoja inferior para editar ----------
+
+let sheetTodoId = null;
+let sheetPriority = 'medium';
+
+function renderEditSheetChoices() {
+  for (const button of editDueButtons) {
+    const value = button.dataset.due === '' ? '' : dueShortcut(button.dataset.due);
+    button.setAttribute('aria-pressed', String(editDue.value === value));
+  }
+  for (const button of editPriorityButtons) {
+    button.setAttribute('aria-pressed', String(button.dataset.priority === sheetPriority));
+  }
+}
+
+function openEditSheet(todo) {
+  sheetTodoId = todo.id;
+  sheetPriority = todo.priority;
+  editText.value = formatTodoText(todo);
+  editDue.value = todo.dueDate ?? '';
+  renderEditSheetChoices();
+  editSheet.showModal();
+  editText.blur(); // evita que el teclado se abra solo y tape la hoja
+}
+
+for (const button of editDueButtons) {
+  button.addEventListener('click', () => {
+    editDue.value = button.dataset.due === '' ? '' : dueShortcut(button.dataset.due);
+    renderEditSheetChoices();
+  });
+}
+
+for (const button of editPriorityButtons) {
+  button.addEventListener('click', () => {
+    sheetPriority = button.dataset.priority;
+    renderEditSheetChoices();
+  });
+}
+
+editDue.addEventListener('input', renderEditSheetChoices);
+
+editForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  todos = editTodo(todos, sheetTodoId, editText.value);
+  todos = updateTodo(todos, sheetTodoId, { dueDate: editDue.value || null, priority: sheetPriority });
+  editSheet.close();
+  commit();
+});
+
+document.getElementById('edit-cancel').addEventListener('click', () => editSheet.close());
+
+document.getElementById('edit-delete').addEventListener('click', () => {
+  const id = sheetTodoId;
+  editSheet.close();
+  removeWithUndo((todo) => todo.id === id);
+});
+
+// Tocar fuera de la hoja (sobre el fondo oscuro) la cierra.
+editSheet.addEventListener('click', (event) => {
+  if (event.target === editSheet) editSheet.close();
+});
 
 function toggleTag(tag) {
   activeTag = activeTag === tag ? null : tag;

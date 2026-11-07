@@ -165,6 +165,39 @@
       <p class="hint">Doble clic en una tarea para editarla. Sumá #etiquetas dentro del texto para agruparlas.</p>
     </main>
 
+    <dialog id="edit-sheet" class="sheet-dialog" aria-labelledby="edit-title">
+      <form id="edit-form" class="sheet-form">
+        <h2 id="edit-title">Editar tarea</h2>
+        <label class="field">
+          Tarea
+          <input id="edit-text" type="text" maxlength="200" autocomplete="off" required />
+        </label>
+        <fieldset class="field">
+          <legend>Vence</legend>
+          <div class="seg" id="edit-due-chips">
+            <button type="button" data-due="today">Hoy</button>
+            <button type="button" data-due="tomorrow">Mañana</button>
+            <button type="button" data-due="nextweek">+1 semana</button>
+            <button type="button" data-due="">Sin fecha</button>
+          </div>
+          <input id="edit-due" type="date" aria-label="Fecha de vencimiento" />
+        </fieldset>
+        <fieldset class="field">
+          <legend>Prioridad</legend>
+          <div class="seg" id="edit-priority">
+            <button type="button" data-priority="high">Alta</button>
+            <button type="button" data-priority="medium">Media</button>
+            <button type="button" data-priority="low">Baja</button>
+          </div>
+        </fieldset>
+        <div class="sheet-actions">
+          <button type="button" id="edit-delete" class="danger">Eliminar</button>
+          <button type="button" id="edit-cancel" class="link-button">Cancelar</button>
+          <button type="submit" class="primary-small">Guardar</button>
+        </div>
+      </form>
+    </dialog>
+
     <div id="toast" class="toast" role="status" hidden>
       <span id="toast-message"></span>
       <button id="toast-undo" type="button">Deshacer</button>

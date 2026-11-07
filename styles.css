@@ -88,6 +88,10 @@ body {
   display: none !important;
 }
 
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
 button,
 input,
 select {
@@ -683,6 +687,136 @@ button.badge.tag:hover {
   color: var(--sobre-resaltador);
 }
 
+/* ---------- Hojas inferiores (editar tarea, menú) ---------- */
+
+.sheet-dialog {
+  position: fixed;
+  inset: auto 0 0;
+  width: 100%;
+  max-width: 34rem;
+  max-height: 90dvh;
+  margin: auto auto 0;
+  padding: 0;
+  overflow-y: auto;
+  background: var(--hoja);
+  color: var(--tinta);
+  border: 0;
+  border-top: 2px solid var(--tinta);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 40px rgba(10, 14, 50, 0.3);
+  animation: sheet-up 0.2s ease-out;
+}
+
+.sheet-dialog::backdrop {
+  background: rgba(10, 14, 50, 0.45);
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(2rem);
+    opacity: 0;
+  }
+}
+
+.sheet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+}
+
+.sheet-form h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--tinta-suave);
+  font-size: 0.9rem;
+}
+
+.field legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+}
+
+.field input[type='text'],
+.field input[type='date'] {
+  min-height: 2.75rem;
+  padding: 0.3rem 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--tinta);
+  border-radius: 0;
+  color: var(--tinta);
+  font-size: 1.1rem;
+}
+
+.field input[type='date'] {
+  border-bottom: 1px dashed var(--tinta-suave);
+  font-size: 1rem;
+}
+
+/* Botones en fila que funcionan como un selector: se marca el elegido. */
+.seg {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+  gap: 0.4rem;
+}
+
+.seg button {
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  background: none;
+  border: 1px solid var(--renglon);
+  border-radius: 999px;
+  color: var(--tinta-suave);
+  cursor: pointer;
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--resaltador);
+  border-color: transparent;
+  color: var(--sobre-resaltador);
+  font-weight: 700;
+}
+
+.sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sheet-actions .primary-small {
+  min-height: 2.75rem;
+  margin-left: auto;
+  padding: 0 1.4rem;
+}
+
+.sheet-actions .link-button,
+.sheet-actions .danger {
+  min-height: 2.75rem;
+}
+
+.danger {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--margen);
+  font-weight: 700;
+  cursor: pointer;
+}
+
 @media (max-width: 40rem) {
   :root {
     --gutter: 2.25rem;
@@ -871,6 +1005,7 @@ button.badge.tag:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .sheet::before,
+  .sheet-dialog,
   .toast {
     animation: none;
   }
