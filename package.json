@@ -1,0 +1,13 @@
+{
+  "name": "todo-app",
+  "version": "1.0.0",
+  "description": "Lista de tareas con filtros y persistencia en localStorage (JavaScript vanilla)",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "start": "npx --yes serve ."
+  },
+  "keywords": ["todo", "vanilla-js", "localstorage"],
+  "author": "Magali Modugno",
+  "license": "MIT"
+}
