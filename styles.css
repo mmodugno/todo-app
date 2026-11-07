@@ -72,6 +72,7 @@
 }
 
 body {
+  position: relative;
   margin: 0;
   background: var(--hoja);
   color: var(--tinta);
@@ -115,8 +116,10 @@ select {
   position: relative;
   max-width: 46rem;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
-  padding: clamp(3.25rem, 8vw, 4.75rem) 1.25rem 4rem 0;
+  padding: clamp(3.25rem, 8vw, 4.75rem) max(1.25rem, env(safe-area-inset-right))
+    calc(4rem + env(safe-area-inset-bottom)) 0;
 }
 
 .sheet::before {
@@ -307,7 +310,9 @@ select option {
 
 .filters {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  min-width: 0;
 }
 
 .filters button {
@@ -485,7 +490,7 @@ button.badge.tag:hover {
 .edit-form select,
 .edit-form button {
   height: var(--u);
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .primary-small {
@@ -542,9 +547,9 @@ button.badge.tag:hover {
 /* ---------- Selector de tema ---------- */
 
 .theme-toggle {
-  position: fixed;
-  top: 0.8rem;
-  right: 1rem;
+  position: absolute;
+  top: calc(0.8rem + env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
   z-index: 5;
   display: flex;
   align-items: center;
@@ -584,7 +589,7 @@ button.badge.tag:hover {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 1.25rem;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
   z-index: 10;
   display: flex;
   align-items: center;
@@ -617,22 +622,101 @@ button.badge.tag:hover {
   }
 }
 
+@media (pointer: coarse) {
+  .todo {
+    grid-template-columns: var(--gutter) var(--lead) 1.5rem minmax(0, 1fr) 2.75rem;
+  }
+
+  .todo input[type='checkbox'] {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: calc((var(--u) - 1.5rem) / 2);
+  }
+
+  .todo .delete {
+    width: 100%;
+    padding: 0;
+  }
+}
+
 @media (max-width: 30rem) {
   :root {
-    --gutter: 2.5rem;
+    --gutter: 2.25rem;
     --lead: 0.8rem;
   }
 
   .sheet {
-    padding-right: 0.9rem;
+    padding-right: max(0.9rem, env(safe-area-inset-right));
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 11vw, 3.4rem);
+  }
+
+  .masthead {
+    margin-bottom: var(--u);
+  }
+
+  /* Campo y botón de la misma altura. */
+  .todo-form .row {
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  /* Vence / Prioridad / Ordenar: etiquetas alineadas y controles a lo ancho. */
+  .options {
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-top: 0.25rem;
+  }
+
+  .options label,
+  .sort {
+    display: grid;
+    grid-template-columns: 5.75rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .options input[type='date'],
+  .options select,
+  .sort select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .search {
+    margin-top: var(--u);
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .filters {
+    gap: 0 0.9rem;
   }
 
   .todo .content {
     padding-left: 0.6rem;
   }
 
-  .todo .delete {
-    padding: 0 0.3rem;
+  .footer {
+    gap: 0 1.1rem;
+  }
+}
+
+/* Pantallas muy angostas (320 px): los tres filtros tienen que entrar en una línea. */
+@media (max-width: 22.5rem) {
+  .filters {
+    gap: 0 0.5rem;
+  }
+
+  .filters button {
+    padding: 0 0.1rem;
+    font-size: 0.85rem;
   }
 }
 
