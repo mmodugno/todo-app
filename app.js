@@ -23,6 +23,7 @@ import {
   loadTodos,
   saveTodos,
 } from './todos.js';
+import { initSwipe } from './gestures.js';
 import { resolveTheme, nextTheme, loadTheme, saveTheme } from './theme.js';
 
 const STORAGE_KEY = 'todo-app:v1';
@@ -340,7 +341,14 @@ function renderItem(todo, today) {
   const item = el('li', { className: todo.completed ? 'todo completed' : 'todo' });
   item.dataset.id = todo.id;
   const row = el('div', { className: 'todo-row' });
-  item.append(row);
+  // Fondo que asoma al deslizar la fila (solo se ve en el celular).
+  const background = el(
+    'div',
+    { className: 'swipe-bg', ariaHidden: 'true' },
+    el('span', { textContent: todo.completed ? 'Reabrir' : 'Completar' }),
+    el('span', { textContent: 'Eliminar' }),
+  );
+  item.append(background, row);
 
   if (todo.priority === 'high') {
     row.append(
@@ -494,6 +502,16 @@ for (const [menuId, target] of [
     target.click();
   });
 }
+
+// Deslizar a la derecha completa y a la izquierda elimina (con "Deshacer").
+initSwipe(list, {
+  enabled: () => compact.matches,
+  onComplete: (id) => {
+    todos = toggleTodo(todos, id);
+    commit();
+  },
+  onDelete: (id) => removeWithUndo((todo) => todo.id === id),
+});
 
 function toggleTag(tag) {
   activeTag = activeTag === tag ? null : tag;

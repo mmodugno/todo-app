@@ -83,10 +83,16 @@ export function initSwipe(list, { enabled, onComplete, onDelete }) {
     if (action === 'complete') onComplete(id);
     else if (action === 'delete') onDelete(id);
     else {
-      // No alcanzó: la fila vuelve a su lugar.
+      // No alcanzó: la fila vuelve a su lugar y recién entonces se esconde el fondo.
       item.classList.add('settling');
       item.style.setProperty('--dx', '0px');
-      delete item.dataset.swipe;
+      const done = () => {
+        if (item.classList.contains('swiping')) return; // ya empezó otro gesto
+        item.classList.remove('settling');
+        delete item.dataset.swipe;
+      };
+      item.addEventListener('transitionend', done, { once: true });
+      setTimeout(done, 300); // por si el navegador no emite transitionend
     }
   }
 

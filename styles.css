@@ -648,6 +648,14 @@ button.badge.tag:hover {
   }
 }
 
+.todo {
+  position: relative;
+}
+
+.swipe-bg {
+  display: none;
+}
+
 /* ---------- Celular: la lista primero ---------- */
 
 .quick,
@@ -1033,6 +1041,53 @@ button.badge.tag:hover {
 
   .toast {
     bottom: calc(var(--kb, 0px) + 9.5rem);
+  }
+
+  /* Deslizar: la fila se mueve con el dedo y deja ver la acción que dispara. */
+  .todo[data-swipe] {
+    overflow: hidden;
+  }
+
+  .todo-row {
+    translate: var(--dx, 0px) 0;
+    touch-action: pan-y;
+  }
+
+  .todo[data-swipe] .todo-row {
+    background-color: var(--hoja);
+  }
+
+  .todo.settling .todo-row {
+    transition: translate 0.2s ease-out;
+  }
+
+  .swipe-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    font-weight: 700;
+    visibility: hidden;
+  }
+
+  .todo[data-swipe] .swipe-bg {
+    visibility: visible;
+    color: var(--sobre-boli);
+  }
+
+  .todo[data-swipe='right'] .swipe-bg {
+    background: var(--boli);
+  }
+
+  .todo[data-swipe='left'] .swipe-bg {
+    background: var(--margen);
+  }
+
+  .todo[data-swipe='right'] .swipe-bg span:last-child,
+  .todo[data-swipe='left'] .swipe-bg span:first-child {
+    visibility: hidden;
   }
 }
 
