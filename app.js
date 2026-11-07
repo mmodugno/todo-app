@@ -2,10 +2,14 @@ import {
   addTodo,
   toggleTodo,
   editTodo,
+  updateTodo,
   removeTodo,
   clearCompleted,
   filterTodos,
+  sortTodos,
   countActive,
+  dueStatus,
+  todayString,
   loadTodos,
   saveTodos,
 } from './todos.js';
@@ -16,6 +20,7 @@ const EMPTY_MESSAGES = {
   active: 'No tenés tareas pendientes.',
   completed: 'Todavía no completaste ninguna tarea.',
 };
+const PRIORITY_LABELS = { high: 'Alta', medium: 'Media', low: 'Baja' };
 
 // Algunos navegadores lanzan error solo por acceder a localStorage (modo privado).
 function getStorage() {
@@ -29,10 +34,14 @@ function getStorage() {
 const storage = getStorage();
 let todos = loadTodos(storage, STORAGE_KEY);
 let filter = 'all';
+let sort = 'added';
 let editingId = null;
 
 const form = document.getElementById('todo-form');
 const input = document.getElementById('new-todo');
+const dueInput = document.getElementById('new-due');
+const priorityInput = document.getElementById('new-priority');
+const sortSelect = document.getElementById('sort');
 const list = document.getElementById('todo-list');
 const empty = document.getElementById('empty');
 const counter = document.getElementById('counter');
@@ -44,38 +53,108 @@ function commit() {
   render();
 }
 
-function renderEditor(todo) {
-  const editor = document.createElement('input');
-  editor.type = 'text';
-  editor.className = 'edit';
-  editor.value = todo.text;
-  editor.maxLength = 200;
-  editor.setAttribute('aria-label', 'Editar tarea');
+function formatDate(isoDate) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('es-AR', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
 
-  // Evita guardar dos veces (Enter y luego blur al reemplazar el input).
+function createBadge(className, text) {
+  const badge = document.createElement('span');
+  badge.className = `badge ${className}`;
+  badge.textContent = text;
+  return badge;
+}
+
+function renderMeta(todo, today) {
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+
+  if (todo.dueDate) {
+    const status = dueStatus(todo, today);
+    const date = formatDate(todo.dueDate);
+    if (status === 'overdue') meta.append(createBadge('due overdue', `Vencida · ${date}`));
+    else if (status === 'today') meta.append(createBadge('due today', 'Vence hoy'));
+    else meta.append(createBadge('due', `Vence ${date}`));
+  }
+  if (todo.priority !== 'medium') {
+    meta.append(createBadge(`priority-${todo.priority}`, PRIORITY_LABELS[todo.priority]));
+  }
+  return meta;
+}
+
+function renderEditor(todo) {
+  const editor = document.createElement('form');
+  editor.className = 'edit-form';
+
+  const text = document.createElement('input');
+  text.type = 'text';
+  text.className = 'edit';
+  text.value = todo.text;
+  text.maxLength = 200;
+  text.setAttribute('aria-label', 'Editar tarea');
+
+  const due = document.createElement('input');
+  due.type = 'date';
+  due.value = todo.dueDate ?? '';
+  due.setAttribute('aria-label', 'Fecha de vencimiento');
+
+  const priority = document.createElement('select');
+  priority.setAttribute('aria-label', 'Prioridad');
+  for (const [value, label] of Object.entries(PRIORITY_LABELS)) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    option.selected = value === todo.priority;
+    priority.append(option);
+  }
+
+  const save = document.createElement('button');
+  save.type = 'submit';
+  save.className = 'primary-small';
+  save.textContent = 'Guardar';
+
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'link-button';
+  cancel.textContent = 'Cancelar';
+
+  // Evita procesar dos veces el mismo cierre (por ejemplo submit y luego Escape).
   let finished = false;
-  const finish = (save) => {
+  const finish = (shouldSave) => {
     if (finished) return;
     finished = true;
-    if (save) todos = editTodo(todos, todo.id, editor.value);
+    if (shouldSave) {
+      todos = editTodo(todos, todo.id, text.value);
+      todos = updateTodo(todos, todo.id, {
+        dueDate: due.value || null,
+        priority: priority.value,
+      });
+    }
     editingId = null;
     commit();
   };
 
-  editor.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') finish(true);
-    else if (event.key === 'Escape') finish(false);
+  editor.addEventListener('submit', (event) => {
+    event.preventDefault();
+    finish(true);
   });
-  editor.addEventListener('blur', () => finish(true));
+  editor.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') finish(false);
+  });
+  cancel.addEventListener('click', () => finish(false));
 
+  editor.append(text, due, priority, save, cancel);
   queueMicrotask(() => {
-    editor.focus();
-    editor.select();
+    text.focus();
+    text.select();
   });
   return editor;
 }
 
-function renderItem(todo) {
+function renderItem(todo, today) {
   const item = document.createElement('li');
   item.className = todo.completed ? 'todo completed' : 'todo';
   item.dataset.id = todo.id;
@@ -95,6 +174,9 @@ function renderItem(todo) {
     return item;
   }
 
+  const content = document.createElement('div');
+  content.className = 'content';
+
   const text = document.createElement('span');
   text.className = 'text';
   text.textContent = todo.text;
@@ -102,6 +184,7 @@ function renderItem(todo) {
     editingId = todo.id;
     render();
   });
+  content.append(text, renderMeta(todo, today));
 
   const remove = document.createElement('button');
   remove.type = 'button';
@@ -113,13 +196,14 @@ function renderItem(todo) {
     commit();
   });
 
-  item.append(text, remove);
+  item.append(content, remove);
   return item;
 }
 
 function render() {
-  const visible = filterTodos(todos, filter);
-  list.replaceChildren(...visible.map(renderItem));
+  const today = todayString();
+  const visible = sortTodos(filterTodos(todos, filter), sort);
+  list.replaceChildren(...visible.map((todo) => renderItem(todo, today)));
 
   empty.hidden = visible.length > 0;
   empty.textContent = EMPTY_MESSAGES[filter];
@@ -137,8 +221,13 @@ function render() {
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();
-  todos = addTodo(todos, input.value);
+  todos = addTodo(todos, input.value, {
+    dueDate: dueInput.value,
+    priority: priorityInput.value,
+  });
   input.value = '';
+  dueInput.value = '';
+  priorityInput.value = 'medium';
   commit();
 });
 
@@ -148,6 +237,11 @@ for (const button of filterButtons) {
     render();
   });
 }
+
+sortSelect.addEventListener('change', () => {
+  sort = sortSelect.value;
+  render();
+});
 
 clearButton.addEventListener('click', () => {
   todos = clearCompleted(todos);

@@ -7,6 +7,7 @@
   --accent: #7c5cdb;
   --accent-text: #ffffff;
   --danger: #d6455d;
+  --warn: #b7791f;
   --radius: 12px;
   color-scheme: light dark;
 }
@@ -21,6 +22,7 @@
     --accent: #9b82ee;
     --accent-text: #17141f;
     --danger: #ff7b90;
+    --warn: #f0b429;
   }
 }
 
@@ -79,10 +81,16 @@ input:focus-visible {
 
 .todo-form {
   display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.todo-form .row {
+  display: flex;
   gap: 0.5rem;
 }
 
-.todo-form input {
+.todo-form #new-todo {
   flex: 1;
   min-width: 0;
   padding: 0.65rem 0.8rem;
@@ -91,7 +99,7 @@ input:focus-visible {
   border-radius: 8px;
 }
 
-.todo-form button {
+.todo-form button[type='submit'] {
   padding: 0.65rem 1rem;
   border: none;
   border-radius: 8px;
@@ -101,14 +109,55 @@ input:focus-visible {
   cursor: pointer;
 }
 
-.todo-form button:hover {
+.todo-form button[type='submit']:hover {
   filter: brightness(1.08);
+}
+
+.options {
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.options label,
+.sort {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+input[type='date'],
+select {
+  padding: 0.3rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  color: var(--text);
+}
+
+select option {
+  background: var(--card);
+  color: var(--text);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.sort {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .filters {
   display: flex;
   gap: 0.4rem;
-  margin: 1rem 0;
 }
 
 .filters button {
@@ -146,11 +195,78 @@ input:focus-visible {
   flex-shrink: 0;
 }
 
-.todo .text {
+.todo .content {
   flex: 1;
   min-width: 0;
+}
+
+.todo .text {
+  display: block;
   overflow-wrap: anywhere;
   cursor: text;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
+
+.meta:empty {
+  display: none;
+}
+
+.badge {
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.badge.due.today {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.badge.due.overdue {
+  color: var(--danger);
+  border-color: var(--danger);
+  font-weight: 600;
+}
+
+.badge.priority-high {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.badge.priority-low {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.edit-form {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.edit-form .edit {
+  flex: 1 1 100%;
+}
+
+.primary-small {
+  padding: 0.3rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .todo.completed .text {
