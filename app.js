@@ -11,6 +11,9 @@ import {
   filterTodos,
   searchTodos,
   filterByTag,
+  MAX_LENGTH,
+  dueShortcut,
+  cyclePriority,
   allTags,
   formatTodoText,
   sortTodos,
@@ -20,6 +23,7 @@ import {
   loadTodos,
   saveTodos,
 } from './todos.js';
+import { initSwipe } from './gestures.js';
 import { resolveTheme, nextTheme, loadTheme, saveTheme } from './theme.js';
 
 const STORAGE_KEY = 'todo-app:v1';
@@ -28,8 +32,21 @@ const EMPTY_MESSAGES = {
   active: 'No quedan tareas pendientes.',
   completed: 'Todavía no completaste ninguna tarea.',
 };
+const PRIORITY_CHIP_LABELS = { high: 'Prioridad alta', medium: 'Prioridad media', low: 'Prioridad baja' };
 const NO_MATCH_MESSAGE = 'Ninguna tarea coincide con la búsqueda.';
 const PRIORITY_LABELS = { high: 'Alta', medium: 'Media', low: 'Baja' };
+
+// Crea un elemento: el: el('button', { type: 'button', className: 'x' }, 'texto', otroNodo).
+function el(tag, props = {}, ...children) {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children);
+  return node;
+}
+
+// "1 tarea" / "3 tareas".
+function plural(count, one, many) {
+  return `${count} ${count === 1 ? one : many}`;
+}
 
 // Algunos navegadores lanzan error solo por acceder a localStorage (modo privado).
 function getStorage() {
@@ -67,6 +84,18 @@ const importFile = document.getElementById('import-file');
 const toast = document.getElementById('toast');
 const toastMessage = document.getElementById('toast-message');
 const toastUndo = document.getElementById('toast-undo');
+const quickButtons = document.querySelectorAll('[data-due]');
+const quickPriority = document.getElementById('quick-priority');
+const searchToggle = document.getElementById('search-toggle');
+const compact = window.matchMedia('(max-width: 40rem)');
+const menuSheet = document.getElementById('menu-sheet');
+const menuSort = document.getElementById('menu-sort');
+const editSheet = document.getElementById('edit-sheet');
+const editForm = document.getElementById('edit-form');
+const editText = document.getElementById('edit-text');
+const editDue = document.getElementById('edit-due');
+const editDueButtons = document.querySelectorAll('#edit-due-chips button');
+const editPriorityButtons = document.querySelectorAll('#edit-priority button');
 
 // ---------- Tema claro / oscuro ----------
 
@@ -80,7 +109,11 @@ const themeColor = document.querySelector('meta[name="theme-color"]');
 function applyTheme(theme) {
   root.dataset.theme = theme;
   themeColor.content = theme === 'dark' ? '#10143a' : '#fbfbf9';
+  document.getElementById('menu-theme').textContent =
+    theme === 'dark' ? 'Pasar a modo claro' : 'Pasar a modo oscuro';
 }
+
+applyTheme(root.dataset.theme); // el script del <head> ya la eligió; acá solo se sincroniza el menú
 
 themeToggle.addEventListener('click', () => {
   const theme = nextTheme(root.dataset.theme);
@@ -153,8 +186,8 @@ function downloadFile(filename, content, type) {
 function importMessage({ added, duplicates, skipped }) {
   if (added === 0) return 'No hay tareas nuevas para importar';
   const parts = [added === 1 ? 'Se importó 1 tarea' : `Se importaron ${added} tareas`];
-  if (duplicates > 0) parts.push(duplicates === 1 ? '1 ya estaba' : `${duplicates} ya estaban`);
-  if (skipped > 0) parts.push(skipped === 1 ? '1 no era válida' : `${skipped} no eran válidas`);
+  if (duplicates > 0) parts.push(plural(duplicates, 'ya estaba', 'ya estaban'));
+  if (skipped > 0) parts.push(plural(skipped, 'no era válida', 'no eran válidas'));
   return parts.join(', ');
 }
 
@@ -211,26 +244,20 @@ function formatDate(isoDate) {
 function renderDate(now = new Date()) {
   const weekday = now.toLocaleDateString('es-AR', { weekday: 'long' });
   const month = now.toLocaleDateString('es-AR', { month: 'long' });
-  const first = document.createElement('span');
-  first.className = 'day-line';
-  first.textContent = `${weekday} ${now.getDate()}`;
-  const second = document.createElement('span');
-  second.className = 'day-line';
-  second.textContent = `de ${month}`;
   todayHeading.dateTime = todayString(now);
-  todayHeading.replaceChildren(first, second);
+  todayHeading.replaceChildren(
+    el('span', { className: 'day-line', textContent: `${weekday} ${now.getDate()}` }),
+    ' ',
+    el('span', { className: 'day-line', textContent: `de ${month}` }),
+  );
 }
 
 function createBadge(className, text) {
-  const badge = document.createElement('span');
-  badge.className = `badge ${className}`;
-  badge.textContent = text;
-  return badge;
+  return el('span', { className: `badge ${className}`, textContent: text });
 }
 
 function renderMeta(todo, today) {
-  const meta = document.createElement('div');
-  meta.className = 'meta';
+  const meta = el('div', { className: 'meta' });
 
   if (todo.dueDate) {
     const status = dueStatus(todo, today);
@@ -241,52 +268,42 @@ function renderMeta(todo, today) {
   }
   if (todo.priority === 'low') meta.append(createBadge('priority-low', 'Prioridad baja'));
   for (const tag of todo.tags) {
-    const badge = document.createElement('button');
-    badge.type = 'button';
-    badge.className = 'badge tag';
-    badge.textContent = `#${tag}`;
-    badge.setAttribute('aria-label', `Filtrar por la etiqueta ${tag}`);
-    badge.addEventListener('click', () => toggleTag(tag));
-    meta.append(badge);
+    meta.append(
+      el('button', {
+        type: 'button',
+        className: 'badge tag',
+        textContent: `#${tag}`,
+        ariaLabel: `Filtrar por la etiqueta ${tag}`,
+        onclick: () => toggleTag(tag),
+      }),
+    );
   }
   return meta;
 }
 
 function renderEditor(todo) {
-  const editor = document.createElement('form');
-  editor.className = 'edit-form';
-
-  const text = document.createElement('input');
-  text.type = 'text';
-  text.className = 'edit';
-  text.value = formatTodoText(todo);
-  text.maxLength = 200;
-  text.setAttribute('aria-label', 'Editar tarea (podés usar #etiquetas)');
-
-  const due = document.createElement('input');
-  due.type = 'date';
-  due.value = todo.dueDate ?? '';
-  due.setAttribute('aria-label', 'Fecha de vencimiento');
-
-  const priority = document.createElement('select');
-  priority.setAttribute('aria-label', 'Prioridad');
-  for (const [value, label] of Object.entries(PRIORITY_LABELS)) {
-    const option = document.createElement('option');
-    option.value = value;
-    option.textContent = label;
-    option.selected = value === todo.priority;
-    priority.append(option);
-  }
-
-  const save = document.createElement('button');
-  save.type = 'submit';
-  save.className = 'primary-small';
-  save.textContent = 'Guardar';
-
-  const cancel = document.createElement('button');
-  cancel.type = 'button';
-  cancel.className = 'link-button';
-  cancel.textContent = 'Cancelar';
+  const text = el('input', {
+    type: 'text',
+    className: 'edit',
+    value: formatTodoText(todo),
+    maxLength: MAX_LENGTH,
+    ariaLabel: 'Editar tarea (podés usar #etiquetas)',
+  });
+  const due = el('input', {
+    type: 'date',
+    value: todo.dueDate ?? '',
+    ariaLabel: 'Fecha de vencimiento',
+  });
+  const priority = el(
+    'select',
+    { ariaLabel: 'Prioridad' },
+    ...Object.entries(PRIORITY_LABELS).map(([value, label]) =>
+      el('option', { value, textContent: label, selected: value === todo.priority }),
+    ),
+  );
+  const save = el('button', { type: 'submit', className: 'primary-small', textContent: 'Guardar' });
+  const cancel = el('button', { type: 'button', className: 'link-button', textContent: 'Cancelar' });
+  const editor = el('form', { className: 'edit-form' }, text, due, priority, save, cancel);
 
   // Evita procesar dos veces el mismo cierre (por ejemplo submit y luego Escape).
   let finished = false;
@@ -313,7 +330,6 @@ function renderEditor(todo) {
   });
   cancel.addEventListener('click', () => finish(false));
 
-  editor.append(text, due, priority, save, cancel);
   queueMicrotask(() => {
     text.focus();
     text.select();
@@ -322,60 +338,180 @@ function renderEditor(todo) {
 }
 
 function renderItem(todo, today) {
-  const item = document.createElement('li');
-  item.className = todo.completed ? 'todo completed' : 'todo';
+  const item = el('li', { className: todo.completed ? 'todo completed' : 'todo' });
   item.dataset.id = todo.id;
+  const row = el('div', { className: 'todo-row' });
+  // Fondo que asoma al deslizar la fila (solo se ve en el celular).
+  const background = el(
+    'div',
+    { className: 'swipe-bg', ariaHidden: 'true' },
+    el('span', { textContent: todo.completed ? 'Reabrir' : 'Completar' }),
+    el('span', { textContent: 'Eliminar' }),
+  );
+  item.append(background, row);
 
   if (todo.priority === 'high') {
-    const mark = document.createElement('span');
-    mark.className = 'priority-mark high';
-    const hidden = document.createElement('span');
-    hidden.className = 'sr-only';
-    hidden.textContent = 'Prioridad alta';
-    const symbol = document.createElement('span');
-    symbol.setAttribute('aria-hidden', 'true');
-    symbol.textContent = '!!';
-    mark.append(hidden, symbol);
-    item.append(mark);
+    row.append(
+      el(
+        'span',
+        { className: 'priority-mark high' },
+        el('span', { className: 'sr-only', textContent: 'Prioridad alta' }),
+        el('span', { ariaHidden: 'true', textContent: '!!' }),
+      ),
+    );
   }
 
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.checked = todo.completed;
-  checkbox.setAttribute('aria-label', `Marcar "${todo.text}" como completada`);
-  checkbox.addEventListener('change', () => {
-    todos = toggleTodo(todos, todo.id);
-    commit();
-  });
-  item.append(checkbox);
+  // El <label> agranda el área tocable del checkbox sin cambiar cómo se ve.
+  row.append(
+    el(
+      'label',
+      { className: 'check' },
+      el('input', {
+        type: 'checkbox',
+        checked: todo.completed,
+        ariaLabel: `Marcar "${todo.text}" como completada`,
+        onchange: () => {
+          todos = toggleTodo(todos, todo.id);
+          commit();
+        },
+      }),
+    ),
+  );
 
   if (editingId === todo.id) {
-    item.append(renderEditor(todo));
+    row.append(renderEditor(todo));
     return item;
   }
 
-  const content = document.createElement('div');
-  content.className = 'content';
-
-  const text = document.createElement('span');
-  text.className = 'text';
-  text.textContent = todo.text;
-  text.addEventListener('dblclick', () => {
-    editingId = todo.id;
-    render();
+  const text = el('span', {
+    className: 'text',
+    textContent: todo.text,
+    // En escritorio se edita en el lugar con doble clic.
+    ondblclick: () => {
+      editingId = todo.id;
+      render();
+    },
   });
-  content.append(text, renderMeta(todo, today));
+  const remove = el('button', {
+    type: 'button',
+    className: 'delete',
+    textContent: '×',
+    ariaLabel: `Eliminar "${todo.text}"`,
+    onclick: () => removeWithUndo((t) => t.id === todo.id),
+  });
 
-  const remove = document.createElement('button');
-  remove.type = 'button';
-  remove.className = 'delete';
-  remove.textContent = '×';
-  remove.setAttribute('aria-label', `Eliminar "${todo.text}"`);
-  remove.addEventListener('click', () => removeWithUndo((t) => t.id === todo.id));
-
-  item.append(content, remove);
+  const content = el('div', { className: 'content' }, text, renderMeta(todo, today));
+  // En el celular un toque abre la hoja de edición (no existe el doble clic).
+  content.addEventListener('click', (event) => {
+    if (compact.matches && !event.target.closest('button')) openEditSheet(todo);
+  });
+  row.append(content, remove);
   return item;
 }
+
+// ---------- Celular: hoja inferior para editar ----------
+
+let sheetTodoId = null;
+let sheetPriority = 'medium';
+
+function renderEditSheetChoices() {
+  for (const button of editDueButtons) {
+    const value = button.dataset.due === '' ? '' : dueShortcut(button.dataset.due);
+    button.setAttribute('aria-pressed', String(editDue.value === value));
+  }
+  for (const button of editPriorityButtons) {
+    button.setAttribute('aria-pressed', String(button.dataset.priority === sheetPriority));
+  }
+}
+
+function openEditSheet(todo) {
+  sheetTodoId = todo.id;
+  sheetPriority = todo.priority;
+  editText.value = formatTodoText(todo);
+  editDue.value = todo.dueDate ?? '';
+  renderEditSheetChoices();
+  editSheet.showModal();
+  editText.blur(); // evita que el teclado se abra solo y tape la hoja
+}
+
+for (const button of editDueButtons) {
+  button.addEventListener('click', () => {
+    editDue.value = button.dataset.due === '' ? '' : dueShortcut(button.dataset.due);
+    renderEditSheetChoices();
+  });
+}
+
+for (const button of editPriorityButtons) {
+  button.addEventListener('click', () => {
+    sheetPriority = button.dataset.priority;
+    renderEditSheetChoices();
+  });
+}
+
+editDue.addEventListener('input', renderEditSheetChoices);
+
+editForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  todos = editTodo(todos, sheetTodoId, editText.value);
+  todos = updateTodo(todos, sheetTodoId, { dueDate: editDue.value || null, priority: sheetPriority });
+  editSheet.close();
+  commit();
+});
+
+document.getElementById('edit-cancel').addEventListener('click', () => editSheet.close());
+
+document.getElementById('edit-delete').addEventListener('click', () => {
+  const id = sheetTodoId;
+  editSheet.close();
+  removeWithUndo((todo) => todo.id === id);
+});
+
+// Tocar fuera de la hoja (sobre el fondo oscuro) la cierra.
+editSheet.addEventListener('click', (event) => {
+  if (event.target === editSheet) editSheet.close();
+});
+
+// ---------- Celular: menú ⋯ ----------
+
+function openMenu() {
+  menuSort.value = sort;
+  menuSheet.showModal();
+}
+
+document.getElementById('menu-open').addEventListener('click', openMenu);
+document.getElementById('menu-close').addEventListener('click', () => menuSheet.close());
+menuSheet.addEventListener('click', (event) => {
+  if (event.target === menuSheet) menuSheet.close();
+});
+
+menuSort.addEventListener('change', () => {
+  sort = menuSort.value;
+  sortSelect.value = sort; // mantiene sincronizado el selector de escritorio
+  render();
+});
+
+// Cada opción del menú reutiliza el botón que ya existe en escritorio.
+for (const [menuId, target] of [
+  ['menu-theme', themeToggle],
+  ['menu-export', exportButton],
+  ['menu-import', importButton],
+  ['menu-clear', clearButton],
+]) {
+  document.getElementById(menuId).addEventListener('click', () => {
+    menuSheet.close();
+    target.click();
+  });
+}
+
+// Deslizar a la derecha completa y a la izquierda elimina (con "Deshacer").
+initSwipe(list, {
+  enabled: () => compact.matches,
+  onComplete: (id) => {
+    todos = toggleTodo(todos, id);
+    commit();
+  },
+  onDelete: (id) => removeWithUndo((todo) => todo.id === id),
+});
 
 function toggleTag(tag) {
   activeTag = activeTag === tag ? null : tag;
@@ -386,16 +522,17 @@ function renderTagBar(tags) {
   tagBar.hidden = tags.length === 0;
   tagBar.replaceChildren(
     ...tags.map(({ tag, count }) => {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = tag === activeTag ? 'chip active' : 'chip';
-      const total = document.createElement('span');
-      total.className = 'count';
-      total.textContent = count;
-      chip.append(`#${tag} `, total);
-      chip.setAttribute('aria-pressed', String(tag === activeTag));
-      chip.addEventListener('click', () => toggleTag(tag));
-      return chip;
+      return el(
+        'button',
+        {
+          type: 'button',
+          className: tag === activeTag ? 'chip active' : 'chip',
+          ariaPressed: String(tag === activeTag),
+          onclick: () => toggleTag(tag),
+        },
+        `#${tag} `,
+        el('span', { className: 'count', textContent: count }),
+      );
     }),
   );
 }
@@ -417,9 +554,11 @@ function render() {
 
   const active = countActive(todos);
   counter.textContent =
-    active === 0 ? 'Nada pendiente' : active === 1 ? '1 tarea por hacer' : `${active} tareas por hacer`;
+    active === 0 ? 'Nada pendiente' : `${plural(active, 'tarea', 'tareas')} por hacer`;
   clearButton.disabled = active === todos.length;
   exportButton.disabled = todos.length === 0;
+  document.getElementById('menu-export').disabled = exportButton.disabled;
+  document.getElementById('menu-clear').disabled = clearButton.disabled;
 
   for (const button of filterButtons) {
     const isActive = button.dataset.filter === filter;
@@ -437,8 +576,60 @@ form.addEventListener('submit', (event) => {
   input.value = '';
   dueInput.value = '';
   priorityInput.value = 'medium';
+  renderQuick();
   commit();
 });
+
+// ---------- Celular: atajos del formulario, búsqueda y teclado ----------
+
+// En el celular, fecha y prioridad se cargan con atajos; guardan su valor en los mismos campos.
+function renderQuick() {
+  for (const button of quickButtons) {
+    button.setAttribute('aria-pressed', String(dueInput.value === dueShortcut(button.dataset.due)));
+  }
+  quickPriority.textContent = PRIORITY_CHIP_LABELS[priorityInput.value];
+  quickPriority.dataset.priority = priorityInput.value;
+}
+
+for (const button of quickButtons) {
+  button.addEventListener('click', () => {
+    const value = dueShortcut(button.dataset.due);
+    dueInput.value = dueInput.value === value ? '' : value; // tocar de nuevo lo quita
+    renderQuick();
+  });
+}
+
+quickPriority.addEventListener('click', () => {
+  priorityInput.value = cyclePriority(priorityInput.value);
+  renderQuick();
+});
+
+function setSearchOpen(open) {
+  searchInput.classList.toggle('open', open);
+  searchToggle.setAttribute('aria-expanded', String(open));
+  if (open) searchInput.focus();
+}
+
+searchToggle.addEventListener('click', () => {
+  const open = !searchInput.classList.contains('open');
+  setSearchOpen(open);
+  if (!open) {
+    searchInput.value = '';
+    query = '';
+    render();
+  }
+});
+
+// Si el teclado tapa el formulario fijo (iOS), lo subimos por encima de él.
+if (window.visualViewport) {
+  const viewport = window.visualViewport;
+  const syncKeyboard = () => {
+    const covered = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+    root.style.setProperty('--kb', `${covered}px`);
+  };
+  viewport.addEventListener('resize', syncKeyboard);
+  viewport.addEventListener('scroll', syncKeyboard);
+}
 
 for (const button of filterButtons) {
   button.addEventListener('click', () => {
@@ -459,6 +650,7 @@ sortSelect.addEventListener('change', () => {
 
 clearButton.addEventListener('click', () => removeWithUndo((t) => t.completed));
 
+renderQuick();
 render();
 
 // Permite instalar la app y usarla sin conexión.

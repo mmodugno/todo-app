@@ -2,7 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="description" content="Lista de tareas con prioridades, vencimientos y etiquetas. Se guarda en tu navegador." />
     <title>Tareas</title>
     <meta name="theme-color" content="#fbfbf9" />
@@ -65,6 +65,12 @@
           />
           <button type="submit">Agregar</button>
         </div>
+        <div class="quick" role="group" aria-label="Atajos de fecha y prioridad">
+          <button type="button" data-due="today">Hoy</button>
+          <button type="button" data-due="tomorrow">Mañana</button>
+          <button type="button" data-due="nextweek">+1 semana</button>
+          <button type="button" id="quick-priority">Prioridad media</button>
+        </div>
         <div class="options">
           <label>
             Vence
@@ -106,6 +112,28 @@
             <option value="newest">Más nuevas</option>
           </select>
         </label>
+        <div class="toolbar-actions">
+          <button
+            type="button"
+            id="search-toggle"
+            class="icon-button"
+            aria-label="Buscar"
+            aria-expanded="false"
+            aria-controls="search"
+          >
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="M16 16l5 5" />
+            </svg>
+          </button>
+          <button type="button" id="menu-open" class="icon-button" aria-label="Más opciones" aria-haspopup="dialog">
+            <svg class="icon icon-fill" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="5" cy="12" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="19" cy="12" r="1.8" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <ul id="todo-list" class="todo-list"></ul>
@@ -134,8 +162,63 @@
         <input id="import-file" class="sr-only" type="file" accept=".json,application/json" tabindex="-1" aria-hidden="true" />
       </footer>
 
-      <p class="hint">Doble clic en una tarea para editarla. Sumá #etiquetas dentro del texto para agruparlas.</p>
+      <p class="hint">Doble clic (o un toque en el celular) en una tarea para editarla. Sumá #etiquetas dentro del texto para agruparlas.</p>
     </main>
+
+    <dialog id="edit-sheet" class="sheet-dialog" aria-labelledby="edit-title">
+      <form id="edit-form" class="sheet-form">
+        <h2 id="edit-title">Editar tarea</h2>
+        <label class="field">
+          Tarea
+          <input id="edit-text" type="text" maxlength="200" autocomplete="off" required />
+        </label>
+        <fieldset class="field">
+          <legend>Vence</legend>
+          <div class="seg" id="edit-due-chips">
+            <button type="button" data-due="today">Hoy</button>
+            <button type="button" data-due="tomorrow">Mañana</button>
+            <button type="button" data-due="nextweek">+1 semana</button>
+            <button type="button" data-due="">Sin fecha</button>
+          </div>
+          <input id="edit-due" type="date" aria-label="Fecha de vencimiento" />
+        </fieldset>
+        <fieldset class="field">
+          <legend>Prioridad</legend>
+          <div class="seg" id="edit-priority">
+            <button type="button" data-priority="high">Alta</button>
+            <button type="button" data-priority="medium">Media</button>
+            <button type="button" data-priority="low">Baja</button>
+          </div>
+        </fieldset>
+        <div class="sheet-actions">
+          <button type="button" id="edit-delete" class="danger">Eliminar</button>
+          <button type="button" id="edit-cancel" class="link-button">Cancelar</button>
+          <button type="submit" class="primary-small">Guardar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="menu-sheet" class="sheet-dialog" aria-labelledby="menu-title">
+      <div class="sheet-form">
+        <h2 id="menu-title">Opciones</h2>
+        <label class="field">
+          Ordenar por
+          <select id="menu-sort">
+            <option value="added">Orden de carga</option>
+            <option value="priority">Prioridad</option>
+            <option value="due">Vencimiento</option>
+            <option value="newest">Más nuevas</option>
+          </select>
+        </label>
+        <div class="menu-list">
+          <button type="button" id="menu-theme">Cambiar de tema</button>
+          <button type="button" id="menu-export">Exportar tareas</button>
+          <button type="button" id="menu-import">Importar tareas</button>
+          <button type="button" id="menu-clear" class="danger">Eliminar completadas</button>
+        </div>
+        <button type="button" id="menu-close" class="link-button">Cerrar</button>
+      </div>
+    </dialog>
 
     <div id="toast" class="toast" role="status" hidden>
       <span id="toast-message"></span>

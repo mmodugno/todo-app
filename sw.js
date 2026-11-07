@@ -11,6 +11,7 @@ const ASSETS = [
   'app.js',
   'todos.js',
   'theme.js',
+  'gestures.js',
   'manifest.webmanifest',
   'fonts/recursive-latin-casl-normal.woff2',
   'icons/icon-192.png',

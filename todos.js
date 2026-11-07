@@ -57,6 +57,26 @@ export function formatTodoText(todo) {
   return [todo.text, ...todo.tags.map((tag) => `#${tag}`)].join(' ');
 }
 
+// Suma (o resta) días a una fecha AAAA-MM-DD, respetando meses y años bisiestos.
+export function addDays(isoDate, days) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return todayString(new Date(year, month - 1, day + days));
+}
+
+// Atajos de fecha para cargar rápido: 'today', 'tomorrow' o 'nextweek'.
+const SHORTCUT_OFFSETS = { today: 0, tomorrow: 1, nextweek: 7 };
+
+export function dueShortcut(kind, today = todayString()) {
+  return Object.hasOwn(SHORTCUT_OFFSETS, kind) ? addDays(today, SHORTCUT_OFFSETS[kind]) : null;
+}
+
+// Pasa a la siguiente prioridad: media -> alta -> baja -> media.
+const PRIORITY_CYCLE = ['medium', 'high', 'low'];
+
+export function cyclePriority(current) {
+  return PRIORITY_CYCLE[(PRIORITY_CYCLE.indexOf(current) + 1) % PRIORITY_CYCLE.length];
+}
+
 // Completa los campos opcionales con valores por defecto y descarta los inválidos.
 // Así los datos guardados por versiones anteriores siguen funcionando.
 export function normalizeTodo(todo) {
@@ -93,10 +113,13 @@ export function addTodo(
   ];
 }
 
+// Aplica un cambio a la tarea con ese id y deja las demás intactas.
+function mapTodo(todos, id, change) {
+  return todos.map((todo) => (todo.id === id ? change(todo) : todo));
+}
+
 export function toggleTodo(todos, id) {
-  return todos.map((todo) =>
-    todo.id === id ? { ...todo, completed: !todo.completed } : todo,
-  );
+  return mapTodo(todos, id, (todo) => ({ ...todo, completed: !todo.completed }));
 }
 
 // Si el texto queda vacío, la tarea se elimina (mismo comportamiento que TodoMVC).
@@ -104,21 +127,18 @@ export function editTodo(todos, id, text) {
   const parsed = parseTags(text);
   const clean = normalizeText(parsed.text);
   if (!clean) return removeTodo(todos, id);
-  return todos.map((todo) =>
-    todo.id === id ? { ...todo, text: clean, tags: parsed.tags } : todo,
-  );
+  return mapTodo(todos, id, (todo) => ({ ...todo, text: clean, tags: parsed.tags }));
 }
 
 // Cambia la fecha de vencimiento y/o la prioridad. Lo que no se pasa, no se toca.
 export function updateTodo(todos, id, { dueDate, priority } = {}) {
-  return todos.map((todo) => {
-    if (todo.id !== id) return todo;
-    return normalizeTodo({
+  return mapTodo(todos, id, (todo) =>
+    normalizeTodo({
       ...todo,
       ...(dueDate !== undefined && { dueDate }),
       ...(priority !== undefined && { priority }),
-    });
-  });
+    }),
+  );
 }
 
 export function removeTodo(todos, id) {

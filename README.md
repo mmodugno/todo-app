@@ -33,6 +33,7 @@ Lista de tareas con aspecto de hoja de cuaderno rayado, hecha con **HTML, CSS y 
 **Experiencia**
 - **Modo claro y oscuro** con botón; si no elegís, sigue al sistema
 - **PWA**: se instala en el celular o la compu y abre sin internet
+- **Pensada para el celular**: formulario fijo abajo con atajos (Hoy, Mañana, +1 semana), filtros pegados arriba, hoja inferior para editar con un toque, menú ⋯ y gestos (deslizá a la derecha para completar, a la izquierda para eliminar)
 - Diseño responsive, sin desbordes desde 320 px hasta pantallas grandes
 - Accesible: etiquetas ARIA, foco visible, uso completo con teclado y respeto de `prefers-reduced-motion`
 
@@ -50,13 +51,13 @@ Después abrí http://localhost:3000 (o el puerto que indique la terminal).
 
 ## Tests
 
-La lógica vive en `todos.js` y `theme.js` como funciones puras, así que se prueba sin navegador con el test runner integrado de Node (18 o superior):
+La lógica vive en `todos.js`, `theme.js` y `gestures.js` como funciones puras, así que se prueba sin navegador con el test runner integrado de Node (18 o superior):
 
 ```bash
 npm test
 ```
 
-Son 82 tests en 7 archivos. Además de la lógica, validan el manifest, los íconos y que el service worker guarde todos los archivos que usa la app. El CI de GitHub Actions los corre en Node 20 y 22 en cada push y pull request.
+Son 97 tests en 8 archivos. Además de la lógica, validan el manifest, los íconos y que el service worker guarde todos los archivos que usa la app. El CI de GitHub Actions los corre en Node 20 y 22 en cada push y pull request.
 
 ## Estructura
 
@@ -66,6 +67,7 @@ Son 82 tests en 7 archivos. Además de la lógica, validan el manifest, los íco
 ├── app.js                   # Interfaz: DOM y eventos
 ├── todos.js                 # Lógica pura de tareas
 ├── theme.js                 # Lógica pura del tema
+├── gestures.js              # Gestos de deslizar (decisión pura + eventos táctiles)
 ├── sw.js                    # Service worker (modo sin conexión)
 ├── manifest.webmanifest     # Datos para instalar la app
 ├── fonts/                   # Recursive (licencia OFL), incluida para funcionar offline
@@ -79,7 +81,7 @@ Son 82 tests en 7 archivos. Además de la lógica, validan el manifest, los íco
 
 ## Decisiones de diseño
 
-- **Lógica separada de la interfaz:** `todos.js` y `theme.js` no tocan el DOM, así que son fáciles de testear y reutilizar.
+- **Lógica separada de la interfaz:** `todos.js`, `theme.js` y `gestures.js` (la decisión de qué hace un gesto) no tocan el DOM, así que son fáciles de testear y reutilizar.
 - **Inmutabilidad:** cada operación devuelve un array nuevo en lugar de modificar el anterior, lo que simplifica el deshacer.
 - **Sin `innerHTML`:** todo el texto del usuario se inserta con `textContent`, lo que evita la inyección de HTML.
 - **Datos viejos siempre válidos:** `normalizeTodo` completa o descarta los campos al cargar o importar, de modo que agregar funciones no rompe lo ya guardado.

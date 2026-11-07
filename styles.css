@@ -88,6 +88,10 @@ body {
   display: none !important;
 }
 
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
 button,
 input,
 select {
@@ -131,6 +135,8 @@ select {
   width: 2px;
   background: var(--margen);
   opacity: 0.8;
+  z-index: 5; /* el margen se ve también sobre la barra pegada */
+  pointer-events: none;
   transform-origin: top;
   animation: draw-margin 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
@@ -347,7 +353,7 @@ select option {
   padding: 0;
 }
 
-.todo {
+.todo-row {
   display: grid;
   grid-template-columns: var(--gutter) var(--lead) 1.2rem minmax(0, 1fr) auto;
   background-image: linear-gradient(
@@ -367,9 +373,12 @@ select option {
   line-height: var(--u);
 }
 
+.todo .check {
+  grid-column: 3;
+}
+
 .todo input[type='checkbox'] {
   appearance: none;
-  grid-column: 3;
   align-self: start;
   width: 1.2rem;
   height: 1.2rem;
@@ -623,7 +632,7 @@ button.badge.tag:hover {
 }
 
 @media (pointer: coarse) {
-  .todo {
+  .todo-row {
     grid-template-columns: var(--gutter) var(--lead) 1.5rem minmax(0, 1fr) 2.75rem;
   }
 
@@ -639,89 +648,452 @@ button.badge.tag:hover {
   }
 }
 
-@media (max-width: 30rem) {
+.todo {
+  position: relative;
+}
+
+.swipe-bg {
+  display: none;
+}
+
+/* ---------- Celular: la lista primero ---------- */
+
+.quick,
+.toolbar-actions {
+  display: none;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  color: var(--tinta-suave);
+  cursor: pointer;
+}
+
+.icon-button .icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.icon-button .icon-fill {
+  fill: currentColor;
+  stroke: none;
+}
+
+.icon-button[aria-expanded='true'] {
+  background: var(--marker);
+  color: var(--sobre-resaltador);
+}
+
+/* ---------- Hojas inferiores (editar tarea, menú) ---------- */
+
+.sheet-dialog {
+  position: fixed;
+  inset: auto 0 0;
+  width: 100%;
+  max-width: 34rem;
+  max-height: 90dvh;
+  margin: auto auto 0;
+  padding: 0;
+  overflow-y: auto;
+  background: var(--hoja);
+  color: var(--tinta);
+  border: 0;
+  border-top: 2px solid var(--tinta);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 40px rgba(10, 14, 50, 0.3);
+  animation: sheet-up 0.2s ease-out;
+}
+
+.sheet-dialog::backdrop {
+  background: rgba(10, 14, 50, 0.45);
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(2rem);
+    opacity: 0;
+  }
+}
+
+.sheet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+}
+
+.sheet-form h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--tinta-suave);
+  font-size: 0.9rem;
+}
+
+.field legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+}
+
+.field input[type='text'],
+.field input[type='date'] {
+  min-height: 2.75rem;
+  padding: 0.3rem 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--tinta);
+  border-radius: 0;
+  color: var(--tinta);
+  font-size: 1.1rem;
+}
+
+.field input[type='date'] {
+  border-bottom: 1px dashed var(--tinta-suave);
+  font-size: 1rem;
+}
+
+/* Botones en fila que funcionan como un selector: se marca el elegido. */
+.seg {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+  gap: 0.4rem;
+}
+
+.seg button {
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  background: none;
+  border: 1px solid var(--renglon);
+  border-radius: 999px;
+  color: var(--tinta-suave);
+  cursor: pointer;
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--resaltador);
+  border-color: transparent;
+  color: var(--sobre-resaltador);
+  font-weight: 700;
+}
+
+.sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sheet-actions .primary-small {
+  min-height: 2.75rem;
+  margin-left: auto;
+  padding: 0 1.4rem;
+}
+
+.sheet-actions .link-button,
+.sheet-actions .field select {
+  min-height: 2.75rem;
+  border-bottom: 1px solid var(--tinta-suave);
+  font-size: 1.05rem;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-list button {
+  min-height: 3rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--renglon);
+  color: var(--tinta);
+  font-size: 1.05rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-list button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+#menu-close {
+  align-self: flex-start;
+  min-height: 2.75rem;
+}
+
+.danger {
+  min-height: 2.75rem;
+}
+
+.danger {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--margen);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 40rem) {
   :root {
     --gutter: 2.25rem;
     --lead: 0.8rem;
   }
 
+  /* Lo que en escritorio está a la vista, acá vive en el menú ⋯ o en la hoja de edición. */
+  .theme-toggle,
+  .options,
+  .sort,
+  .footer,
+  .hint,
+  .todo .delete {
+    display: none;
+  }
+
   .sheet {
-    padding-right: max(0.9rem, env(safe-area-inset-right));
+    padding: calc(0.9rem + env(safe-area-inset-top)) max(0.9rem, env(safe-area-inset-right))
+      calc(11rem + env(safe-area-inset-bottom)) 0;
   }
 
   h1 {
-    font-size: clamp(2.2rem, 11vw, 3.4rem);
+    font-size: clamp(1.9rem, 8.5vw, 2.6rem);
+  }
+
+  h1 .day-line {
+    display: inline;
   }
 
   .masthead {
-    margin-bottom: var(--u);
+    margin-bottom: 0.35rem;
   }
 
-  /* Campo y botón de la misma altura. */
+  .counter {
+    margin-top: 0.35rem;
+  }
+
+  /* Barra pegada arriba: filtros como control segmentado + buscar + menú. */
+  .sheet > .toolbar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 4;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    margin: 0 -0.9rem 0 0;
+    padding: 0.35rem 0.9rem 0.35rem calc(var(--gutter) + var(--lead));
+    background: color-mix(in srgb, var(--hoja) 78%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--renglon);
+  }
+
+  .filters {
+    flex: 1;
+    flex-wrap: nowrap;
+    gap: 0.15rem;
+    padding: 0.15rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--renglon) 35%, transparent);
+  }
+
+  .filters button {
+    flex: 1;
+    min-height: 2.5rem;
+    padding: 0 0.25rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+
+  .filters button.active {
+    background: var(--resaltador);
+  }
+
+  .toolbar-actions {
+    display: flex;
+  }
+
+  .search {
+    display: none;
+    margin-top: 0.5rem;
+  }
+
+  .search.open {
+    display: block;
+  }
+
+  .tags {
+    flex-wrap: nowrap;
+    gap: 0.1rem;
+    margin-right: -0.9rem;
+    padding-right: 0.9rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .chip {
+    padding: 0.5rem 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* Cada tarea ocupa dos renglones: así se puede tocar con el dedo. */
+  .todo-row {
+    grid-template-columns: var(--gutter) var(--lead) 2.75rem minmax(0, 1fr);
+    min-height: calc(var(--u) * 2);
+  }
+
+  .todo .check {
+    display: flex;
+    justify-content: center;
+    padding-top: calc((var(--u) - 1.5rem) / 2);
+  }
+
+  .todo .content {
+    padding: 0 0 0 0.2rem;
+  }
+
+  .todo .text {
+    cursor: pointer;
+  }
+
+  /* Escribir una tarea es lo más frecuente: el formulario queda fijo abajo, al alcance del pulgar. */
+  .sheet > .todo-form {
+    position: fixed;
+    right: 0;
+    bottom: var(--kb, 0px);
+    left: 0;
+    z-index: 6;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0.6rem max(0.9rem, env(safe-area-inset-right)) calc(0.6rem + env(safe-area-inset-bottom))
+      calc(var(--gutter) + var(--lead));
+    background: color-mix(in srgb, var(--hoja) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--renglon);
+    box-shadow: 0 -6px 18px rgba(10, 14, 50, 0.08);
+  }
+
   .todo-form .row {
     align-items: stretch;
     gap: 0.75rem;
   }
 
-  /* Vence / Prioridad / Ordenar: etiquetas alineadas y controles a lo ancho. */
-  .options {
-    flex-direction: column;
-    gap: 0.2rem;
-    margin-top: 0.25rem;
+  #new-todo,
+  .todo-form button[type='submit'] {
+    min-height: 2.75rem;
   }
 
-  .options label,
-  .sort {
-    display: grid;
-    grid-template-columns: 5.75rem minmax(0, 1fr);
+  .quick {
+    display: flex;
+    gap: 0.4rem;
+    margin-right: -0.9rem;
+    padding-right: 0.9rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .quick button {
+    flex: none;
+    min-height: 2.75rem;
+    padding: 0 0.9rem;
+    background: none;
+    border: 1px solid var(--renglon);
+    border-radius: 999px;
+    color: var(--tinta-suave);
+    font-size: 0.95rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .quick button[aria-pressed='true'] {
+    background: var(--resaltador);
+    border-color: transparent;
+    color: var(--sobre-resaltador);
+    font-weight: 700;
+  }
+
+  .quick button[data-priority='high'] {
+    border-color: var(--margen);
+    color: var(--margen);
+    font-weight: 700;
+  }
+
+  .toast {
+    bottom: calc(var(--kb, 0px) + 9.5rem);
+  }
+
+  /* Deslizar: la fila se mueve con el dedo y deja ver la acción que dispara. */
+  .todo[data-swipe] {
+    overflow: hidden;
+  }
+
+  .todo-row {
+    translate: var(--dx, 0px) 0;
+    touch-action: pan-y;
+  }
+
+  .todo[data-swipe] .todo-row {
+    background-color: var(--hoja);
+  }
+
+  .todo.settling .todo-row {
+    transition: translate 0.2s ease-out;
+  }
+
+  .swipe-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    padding: 0 1rem;
+    font-weight: 700;
+    visibility: hidden;
   }
 
-  .options input[type='date'],
-  .options select,
-  .sort select {
-    width: 100%;
-    min-width: 0;
+  .todo[data-swipe] .swipe-bg {
+    visibility: visible;
+    color: var(--sobre-boli);
   }
 
-  .search {
-    margin-top: var(--u);
+  .todo[data-swipe='right'] .swipe-bg {
+    background: var(--boli);
   }
 
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.35rem;
+  .todo[data-swipe='left'] .swipe-bg {
+    background: var(--margen);
   }
 
-  .filters {
-    gap: 0 0.9rem;
-  }
-
-  .todo .content {
-    padding-left: 0.6rem;
-  }
-
-  .footer {
-    gap: 0 1.1rem;
-  }
-}
-
-/* Pantallas muy angostas (320 px): los tres filtros tienen que entrar en una línea. */
-@media (max-width: 22.5rem) {
-  .filters {
-    gap: 0 0.5rem;
-  }
-
-  .filters button {
-    padding: 0 0.1rem;
-    font-size: 0.85rem;
+  .todo[data-swipe='right'] .swipe-bg span:last-child,
+  .todo[data-swipe='left'] .swipe-bg span:first-child {
+    visibility: hidden;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sheet::before,
+  .sheet-dialog,
   .toast {
     animation: none;
   }
