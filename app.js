@@ -20,6 +20,7 @@ import {
   loadTodos,
   saveTodos,
 } from './todos.js';
+import { resolveTheme, nextTheme, loadTheme, saveTheme } from './theme.js';
 
 const STORAGE_KEY = 'todo-app:v1';
 const EMPTY_MESSAGES = {
@@ -66,6 +67,23 @@ const importFile = document.getElementById('import-file');
 const toast = document.getElementById('toast');
 const toastMessage = document.getElementById('toast-message');
 const toastUndo = document.getElementById('toast-undo');
+
+// ---------- Tema claro / oscuro ----------
+
+const root = document.documentElement;
+const themeToggle = document.getElementById('theme-toggle');
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+themeToggle.addEventListener('click', () => {
+  const theme = nextTheme(root.dataset.theme);
+  root.dataset.theme = theme;
+  saveTheme(storage, theme);
+});
+
+// Si nunca elegiste un tema, la app acompaña los cambios del sistema.
+systemDark.addEventListener('change', (event) => {
+  if (loadTheme(storage) === null) root.dataset.theme = resolveTheme(null, event.matches);
+});
 
 function commit() {
   saveTodos(storage, STORAGE_KEY, todos);
