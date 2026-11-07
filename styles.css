@@ -488,6 +488,8 @@ button.badge.tag:hover {
 
 .footer {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.5rem;
   margin-top: var(--u);
 }
 
