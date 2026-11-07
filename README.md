@@ -1,5 +1,7 @@
 # Lista de tareas
 
+[![Tests](https://github.com/mmodugno/todo-app/actions/workflows/test.yml/badge.svg)](https://github.com/mmodugno/todo-app/actions/workflows/test.yml)
+
 Aplicación de tareas hecha con **HTML, CSS y JavaScript vanilla** (sin frameworks ni dependencias). Las tareas se guardan en `localStorage`, así que sobreviven a recargar la página.
 
 **Demo:** https://mmodugno.github.io/todo-app/
