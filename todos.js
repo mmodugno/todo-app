@@ -57,6 +57,32 @@ export function formatTodoText(todo) {
   return [todo.text, ...todo.tags.map((tag) => `#${tag}`)].join(' ');
 }
 
+// Suma (o resta) días a una fecha AAAA-MM-DD, respetando meses y años bisiestos.
+export function addDays(isoDate, days) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return todayString(new Date(year, month - 1, day + days));
+}
+
+// Atajos de fecha para cargar rápido: 'today', 'tomorrow' o 'nextweek'.
+export function dueShortcut(kind, today = todayString()) {
+  switch (kind) {
+    case 'today':
+      return today;
+    case 'tomorrow':
+      return addDays(today, 1);
+    case 'nextweek':
+      return addDays(today, 7);
+    default:
+      return null;
+  }
+}
+
+// Pasa a la siguiente prioridad: media -> alta -> baja -> media.
+export function cyclePriority(current) {
+  const order = ['medium', 'high', 'low'];
+  return order[(order.indexOf(current) + 1) % order.length];
+}
+
 // Completa los campos opcionales con valores por defecto y descarta los inválidos.
 // Así los datos guardados por versiones anteriores siguen funcionando.
 export function normalizeTodo(todo) {
