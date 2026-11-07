@@ -804,7 +804,40 @@ button.badge.tag:hover {
 }
 
 .sheet-actions .link-button,
-.sheet-actions .danger {
+.sheet-actions .field select {
+  min-height: 2.75rem;
+  border-bottom: 1px solid var(--tinta-suave);
+  font-size: 1.05rem;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-list button {
+  min-height: 3rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--renglon);
+  color: var(--tinta);
+  font-size: 1.05rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-list button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+#menu-close {
+  align-self: flex-start;
+  min-height: 2.75rem;
+}
+
+.danger {
   min-height: 2.75rem;
 }
 

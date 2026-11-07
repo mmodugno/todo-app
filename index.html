@@ -198,6 +198,28 @@
       </form>
     </dialog>
 
+    <dialog id="menu-sheet" class="sheet-dialog" aria-labelledby="menu-title">
+      <div class="sheet-form">
+        <h2 id="menu-title">Opciones</h2>
+        <label class="field">
+          Ordenar por
+          <select id="menu-sort">
+            <option value="added">Orden de carga</option>
+            <option value="priority">Prioridad</option>
+            <option value="due">Vencimiento</option>
+            <option value="newest">Más nuevas</option>
+          </select>
+        </label>
+        <div class="menu-list">
+          <button type="button" id="menu-theme">Cambiar de tema</button>
+          <button type="button" id="menu-export">Exportar tareas</button>
+          <button type="button" id="menu-import">Importar tareas</button>
+          <button type="button" id="menu-clear" class="danger">Eliminar completadas</button>
+        </div>
+        <button type="button" id="menu-close" class="link-button">Cerrar</button>
+      </div>
+    </dialog>
+
     <div id="toast" class="toast" role="status" hidden>
       <span id="toast-message"></span>
       <button id="toast-undo" type="button">Deshacer</button>

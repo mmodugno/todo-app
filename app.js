@@ -87,6 +87,8 @@ const quickButtons = document.querySelectorAll('[data-due]');
 const quickPriority = document.getElementById('quick-priority');
 const searchToggle = document.getElementById('search-toggle');
 const compact = window.matchMedia('(max-width: 40rem)');
+const menuSheet = document.getElementById('menu-sheet');
+const menuSort = document.getElementById('menu-sort');
 const editSheet = document.getElementById('edit-sheet');
 const editForm = document.getElementById('edit-form');
 const editText = document.getElementById('edit-text');
@@ -106,7 +108,11 @@ const themeColor = document.querySelector('meta[name="theme-color"]');
 function applyTheme(theme) {
   root.dataset.theme = theme;
   themeColor.content = theme === 'dark' ? '#10143a' : '#fbfbf9';
+  document.getElementById('menu-theme').textContent =
+    theme === 'dark' ? 'Pasar a modo claro' : 'Pasar a modo oscuro';
 }
+
+applyTheme(root.dataset.theme); // el script del <head> ya la eligió; acá solo se sincroniza el menú
 
 themeToggle.addEventListener('click', () => {
   const theme = nextTheme(root.dataset.theme);
@@ -457,6 +463,38 @@ editSheet.addEventListener('click', (event) => {
   if (event.target === editSheet) editSheet.close();
 });
 
+// ---------- Celular: menú ⋯ ----------
+
+function openMenu() {
+  menuSort.value = sort;
+  menuSheet.showModal();
+}
+
+document.getElementById('menu-open').addEventListener('click', openMenu);
+document.getElementById('menu-close').addEventListener('click', () => menuSheet.close());
+menuSheet.addEventListener('click', (event) => {
+  if (event.target === menuSheet) menuSheet.close();
+});
+
+menuSort.addEventListener('change', () => {
+  sort = menuSort.value;
+  sortSelect.value = sort; // mantiene sincronizado el selector de escritorio
+  render();
+});
+
+// Cada opción del menú reutiliza el botón que ya existe en escritorio.
+for (const [menuId, target] of [
+  ['menu-theme', themeToggle],
+  ['menu-export', exportButton],
+  ['menu-import', importButton],
+  ['menu-clear', clearButton],
+]) {
+  document.getElementById(menuId).addEventListener('click', () => {
+    menuSheet.close();
+    target.click();
+  });
+}
+
 function toggleTag(tag) {
   activeTag = activeTag === tag ? null : tag;
   render();
@@ -501,6 +539,8 @@ function render() {
     active === 0 ? 'Nada pendiente' : `${plural(active, 'tarea', 'tareas')} por hacer`;
   clearButton.disabled = active === todos.length;
   exportButton.disabled = todos.length === 0;
+  document.getElementById('menu-export').disabled = exportButton.disabled;
+  document.getElementById('menu-clear').disabled = clearButton.disabled;
 
   for (const button of filterButtons) {
     const isActive = button.dataset.filter === filter;
