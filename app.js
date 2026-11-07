@@ -12,6 +12,8 @@ import {
   searchTodos,
   filterByTag,
   MAX_LENGTH,
+  dueShortcut,
+  cyclePriority,
   allTags,
   formatTodoText,
   sortTodos,
@@ -29,6 +31,7 @@ const EMPTY_MESSAGES = {
   active: 'No quedan tareas pendientes.',
   completed: 'Todavía no completaste ninguna tarea.',
 };
+const PRIORITY_CHIP_LABELS = { high: 'Prioridad alta', medium: 'Prioridad media', low: 'Prioridad baja' };
 const NO_MATCH_MESSAGE = 'Ninguna tarea coincide con la búsqueda.';
 const PRIORITY_LABELS = { high: 'Alta', medium: 'Media', low: 'Baja' };
 
@@ -80,6 +83,9 @@ const importFile = document.getElementById('import-file');
 const toast = document.getElementById('toast');
 const toastMessage = document.getElementById('toast-message');
 const toastUndo = document.getElementById('toast-undo');
+const quickButtons = document.querySelectorAll('[data-due]');
+const quickPriority = document.getElementById('quick-priority');
+const searchToggle = document.getElementById('search-toggle');
 
 // ---------- Tema claro / oscuro ----------
 
@@ -227,6 +233,7 @@ function renderDate(now = new Date()) {
   todayHeading.dateTime = todayString(now);
   todayHeading.replaceChildren(
     el('span', { className: 'day-line', textContent: `${weekday} ${now.getDate()}` }),
+    ' ',
     el('span', { className: 'day-line', textContent: `de ${month}` }),
   );
 }
@@ -436,8 +443,60 @@ form.addEventListener('submit', (event) => {
   input.value = '';
   dueInput.value = '';
   priorityInput.value = 'medium';
+  renderQuick();
   commit();
 });
+
+// ---------- Celular: atajos del formulario, búsqueda y teclado ----------
+
+// En el celular, fecha y prioridad se cargan con atajos; guardan su valor en los mismos campos.
+function renderQuick() {
+  for (const button of quickButtons) {
+    button.setAttribute('aria-pressed', String(dueInput.value === dueShortcut(button.dataset.due)));
+  }
+  quickPriority.textContent = PRIORITY_CHIP_LABELS[priorityInput.value];
+  quickPriority.dataset.priority = priorityInput.value;
+}
+
+for (const button of quickButtons) {
+  button.addEventListener('click', () => {
+    const value = dueShortcut(button.dataset.due);
+    dueInput.value = dueInput.value === value ? '' : value; // tocar de nuevo lo quita
+    renderQuick();
+  });
+}
+
+quickPriority.addEventListener('click', () => {
+  priorityInput.value = cyclePriority(priorityInput.value);
+  renderQuick();
+});
+
+function setSearchOpen(open) {
+  searchInput.classList.toggle('open', open);
+  searchToggle.setAttribute('aria-expanded', String(open));
+  if (open) searchInput.focus();
+}
+
+searchToggle.addEventListener('click', () => {
+  const open = !searchInput.classList.contains('open');
+  setSearchOpen(open);
+  if (!open) {
+    searchInput.value = '';
+    query = '';
+    render();
+  }
+});
+
+// Si el teclado tapa el formulario fijo (iOS), lo subimos por encima de él.
+if (window.visualViewport) {
+  const viewport = window.visualViewport;
+  const syncKeyboard = () => {
+    const covered = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+    root.style.setProperty('--kb', `${covered}px`);
+  };
+  viewport.addEventListener('resize', syncKeyboard);
+  viewport.addEventListener('scroll', syncKeyboard);
+}
 
 for (const button of filterButtons) {
   button.addEventListener('click', () => {
@@ -458,6 +517,7 @@ sortSelect.addEventListener('change', () => {
 
 clearButton.addEventListener('click', () => removeWithUndo((t) => t.completed));
 
+renderQuick();
 render();
 
 // Permite instalar la app y usarla sin conexión.

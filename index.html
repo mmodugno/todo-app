@@ -2,7 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="description" content="Lista de tareas con prioridades, vencimientos y etiquetas. Se guarda en tu navegador." />
     <title>Tareas</title>
     <meta name="theme-color" content="#fbfbf9" />
@@ -65,6 +65,12 @@
           />
           <button type="submit">Agregar</button>
         </div>
+        <div class="quick" role="group" aria-label="Atajos de fecha y prioridad">
+          <button type="button" data-due="today">Hoy</button>
+          <button type="button" data-due="tomorrow">Mañana</button>
+          <button type="button" data-due="nextweek">+1 semana</button>
+          <button type="button" id="quick-priority">Prioridad media</button>
+        </div>
         <div class="options">
           <label>
             Vence
@@ -106,6 +112,28 @@
             <option value="newest">Más nuevas</option>
           </select>
         </label>
+        <div class="toolbar-actions">
+          <button
+            type="button"
+            id="search-toggle"
+            class="icon-button"
+            aria-label="Buscar"
+            aria-expanded="false"
+            aria-controls="search"
+          >
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="M16 16l5 5" />
+            </svg>
+          </button>
+          <button type="button" id="menu-open" class="icon-button" aria-label="Más opciones" aria-haspopup="dialog">
+            <svg class="icon icon-fill" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="5" cy="12" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="19" cy="12" r="1.8" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <ul id="todo-list" class="todo-list"></ul>

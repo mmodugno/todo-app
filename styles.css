@@ -131,6 +131,8 @@ select {
   width: 2px;
   background: var(--margen);
   opacity: 0.8;
+  z-index: 5; /* el margen se ve también sobre la barra pegada */
+  pointer-events: none;
   transform-origin: top;
   animation: draw-margin 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
@@ -642,84 +644,228 @@ button.badge.tag:hover {
   }
 }
 
-@media (max-width: 30rem) {
+/* ---------- Celular: la lista primero ---------- */
+
+.quick,
+.toolbar-actions {
+  display: none;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  color: var(--tinta-suave);
+  cursor: pointer;
+}
+
+.icon-button .icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.icon-button .icon-fill {
+  fill: currentColor;
+  stroke: none;
+}
+
+.icon-button[aria-expanded='true'] {
+  background: var(--marker);
+  color: var(--sobre-resaltador);
+}
+
+@media (max-width: 40rem) {
   :root {
     --gutter: 2.25rem;
     --lead: 0.8rem;
   }
 
+  /* Lo que en escritorio está a la vista, acá vive en el menú ⋯ o en la hoja de edición. */
+  .theme-toggle,
+  .options,
+  .sort,
+  .footer,
+  .hint,
+  .todo .delete {
+    display: none;
+  }
+
   .sheet {
-    padding-right: max(0.9rem, env(safe-area-inset-right));
+    padding: calc(0.9rem + env(safe-area-inset-top)) max(0.9rem, env(safe-area-inset-right))
+      calc(11rem + env(safe-area-inset-bottom)) 0;
   }
 
   h1 {
-    font-size: clamp(2.2rem, 11vw, 3.4rem);
+    font-size: clamp(1.9rem, 8.5vw, 2.6rem);
+  }
+
+  h1 .day-line {
+    display: inline;
   }
 
   .masthead {
-    margin-bottom: var(--u);
+    margin-bottom: 0.35rem;
   }
 
-  /* Campo y botón de la misma altura. */
+  .counter {
+    margin-top: 0.35rem;
+  }
+
+  /* Barra pegada arriba: filtros como control segmentado + buscar + menú. */
+  .sheet > .toolbar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 4;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    margin: 0 -0.9rem 0 0;
+    padding: 0.35rem 0.9rem 0.35rem calc(var(--gutter) + var(--lead));
+    background: color-mix(in srgb, var(--hoja) 78%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--renglon);
+  }
+
+  .filters {
+    flex: 1;
+    flex-wrap: nowrap;
+    gap: 0.15rem;
+    padding: 0.15rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--renglon) 35%, transparent);
+  }
+
+  .filters button {
+    flex: 1;
+    min-height: 2.5rem;
+    padding: 0 0.25rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+
+  .filters button.active {
+    background: var(--resaltador);
+  }
+
+  .toolbar-actions {
+    display: flex;
+  }
+
+  .search {
+    display: none;
+    margin-top: 0.5rem;
+  }
+
+  .search.open {
+    display: block;
+  }
+
+  .tags {
+    flex-wrap: nowrap;
+    gap: 0.1rem;
+    margin-right: -0.9rem;
+    padding-right: 0.9rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .chip {
+    padding: 0.5rem 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* Cada tarea ocupa dos renglones: así se puede tocar con el dedo. */
+  .todo-row {
+    grid-template-columns: var(--gutter) var(--lead) 2.75rem minmax(0, 1fr);
+    min-height: calc(var(--u) * 2);
+  }
+
+  .todo .check {
+    display: flex;
+    justify-content: center;
+    padding-top: calc((var(--u) - 1.5rem) / 2);
+  }
+
+  .todo .content {
+    padding: 0 0 0 0.2rem;
+  }
+
+  .todo .text {
+    cursor: pointer;
+  }
+
+  /* Escribir una tarea es lo más frecuente: el formulario queda fijo abajo, al alcance del pulgar. */
+  .sheet > .todo-form {
+    position: fixed;
+    right: 0;
+    bottom: var(--kb, 0px);
+    left: 0;
+    z-index: 6;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0.6rem max(0.9rem, env(safe-area-inset-right)) calc(0.6rem + env(safe-area-inset-bottom))
+      calc(var(--gutter) + var(--lead));
+    background: color-mix(in srgb, var(--hoja) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--renglon);
+    box-shadow: 0 -6px 18px rgba(10, 14, 50, 0.08);
+  }
+
   .todo-form .row {
     align-items: stretch;
     gap: 0.75rem;
   }
 
-  /* Vence / Prioridad / Ordenar: etiquetas alineadas y controles a lo ancho. */
-  .options {
-    flex-direction: column;
-    gap: 0.2rem;
-    margin-top: 0.25rem;
+  #new-todo,
+  .todo-form button[type='submit'] {
+    min-height: 2.75rem;
   }
 
-  .options label,
-  .sort {
-    display: grid;
-    grid-template-columns: 5.75rem minmax(0, 1fr);
-    align-items: center;
-    gap: 0.5rem;
+  .quick {
+    display: flex;
+    gap: 0.4rem;
+    margin-right: -0.9rem;
+    padding-right: 0.9rem;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
-  .options input[type='date'],
-  .options select,
-  .sort select {
-    width: 100%;
-    min-width: 0;
+  .quick button {
+    flex: none;
+    min-height: 2.75rem;
+    padding: 0 0.9rem;
+    background: none;
+    border: 1px solid var(--renglon);
+    border-radius: 999px;
+    color: var(--tinta-suave);
+    font-size: 0.95rem;
+    white-space: nowrap;
+    cursor: pointer;
   }
 
-  .search {
-    margin-top: var(--u);
+  .quick button[aria-pressed='true'] {
+    background: var(--resaltador);
+    border-color: transparent;
+    color: var(--sobre-resaltador);
+    font-weight: 700;
   }
 
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.35rem;
+  .quick button[data-priority='high'] {
+    border-color: var(--margen);
+    color: var(--margen);
+    font-weight: 700;
   }
 
-  .filters {
-    gap: 0 0.9rem;
-  }
-
-  .todo .content {
-    padding-left: 0.6rem;
-  }
-
-  .footer {
-    gap: 0 1.1rem;
-  }
-}
-
-/* Pantallas muy angostas (320 px): los tres filtros tienen que entrar en una línea. */
-@media (max-width: 22.5rem) {
-  .filters {
-    gap: 0 0.5rem;
-  }
-
-  .filters button {
-    padding: 0 0.1rem;
-    font-size: 0.85rem;
+  .toast {
+    bottom: calc(var(--kb, 0px) + 9.5rem);
   }
 }
 
