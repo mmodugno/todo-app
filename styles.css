@@ -94,7 +94,7 @@ select {
   max-width: 46rem;
   min-height: 100vh;
   margin: 0 auto;
-  padding: clamp(2rem, 7vw, 4.5rem) 1.25rem 4rem 0;
+  padding: clamp(3.25rem, 8vw, 4.75rem) 1.25rem 4rem 0;
 }
 
 .sheet::before {
@@ -515,6 +515,46 @@ button.badge.tag:hover {
   margin-bottom: 0;
   color: var(--tinta-suave);
   font-size: 0.85rem;
+}
+
+/* ---------- Selector de tema ---------- */
+
+.theme-toggle {
+  position: fixed;
+  top: 0.8rem;
+  right: 1rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.5rem;
+  background: none;
+  border: 0;
+  color: var(--tinta-suave);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  color: var(--tinta);
+}
+
+.theme-toggle .icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Muestra la acción que se va a hacer: en claro, "Modo oscuro"; en oscuro, "Modo claro". */
+:root[data-theme='dark'] .icon-moon,
+:root[data-theme='dark'] .to-dark,
+:root:not([data-theme='dark']) .icon-sun,
+:root:not([data-theme='dark']) .to-light {
+  display: none;
 }
 
 /* ---------- Aviso (nota adhesiva) ---------- */
