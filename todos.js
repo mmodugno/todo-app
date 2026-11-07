@@ -125,6 +125,31 @@ export function removeTodo(todos, id) {
   return todos.filter((todo) => todo.id !== id);
 }
 
+// Quita las tareas que cumplen la condición y devuelve también la posición que
+// tenían, para poder deshacerlo con restoreTodos.
+export function takeTodos(todos, predicate) {
+  const remaining = [];
+  const removed = [];
+  todos.forEach((todo, index) => {
+    if (predicate(todo)) removed.push({ todo, index });
+    else remaining.push(todo);
+  });
+  return { remaining, removed };
+}
+
+// Vuelve a insertar las tareas quitadas en su posición original. Si la lista
+// cambió mientras tanto, ajusta la posición y evita duplicar tareas.
+export function restoreTodos(todos, removed) {
+  const present = new Set(todos.map((todo) => todo.id));
+  const result = [...todos];
+  const ordered = [...removed].sort((a, b) => a.index - b.index);
+  for (const { todo, index } of ordered) {
+    if (present.has(todo.id)) continue;
+    result.splice(Math.min(index, result.length), 0, todo);
+  }
+  return result;
+}
+
 export function clearCompleted(todos) {
   return todos.filter((todo) => !todo.completed);
 }
