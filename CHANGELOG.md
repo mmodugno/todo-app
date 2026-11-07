@@ -3,6 +3,17 @@
 Todos los cambios importantes de este proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Agregado
+- Diseño pensado para el celular (hasta 40 rem): lista primero, formulario fijo abajo con atajos de fecha y prioridad, filtros segmentados pegados arriba y áreas táctiles de al menos 44 px.
+- Hoja inferior para editar una tarea con un toque y menú ⋯ con orden, tema, exportar, importar y eliminar completadas.
+- Gestos: deslizar a la derecha completa la tarea y a la izquierda la elimina (con deshacer).
+- `addDays`, `dueShortcut` y `cyclePriority` en la lógica, con tests.
+
+### Cambiado
+- Refactor de `todos.js` y `app.js` (helpers `mapTodo`, `el` y `plural`) sin cambios de comportamiento.
+
 ## [1.0.0] - 2026-11-07
 
 Primera versión completa.
