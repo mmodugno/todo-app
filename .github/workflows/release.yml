@@ -1,0 +1,34 @@
+name: Release
+
+# Al subir un tag como v1.2.0 se crea el Release en GitHub usando las
+# notas de esa versión que están en CHANGELOG.md.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extraer las notas de la versión
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { found = 1; next }
+            /^## \[/ { found = 0 }
+            found
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "No hay notas para la versión $version en CHANGELOG.md" >&2
+            exit 1
+          fi
+
+      - name: Crear el Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md
